@@ -12,7 +12,6 @@
     --line:#2e3455;
     --txt:#f2f4ff;
     --sub:#9aa3c7;
-    --accent:#6c7cff;
     --red:#e2444b;
     --yellow:#f0b429;
     --blue:#2f7ae5;
@@ -23,10 +22,10 @@
   body{
     margin:0;min-height:100vh;background:var(--bg);color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
-    display:flex;justify-content:center;padding:0;
+    display:flex;justify-content:center;
   }
   #app{width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;
-    background:linear-gradient(180deg,var(--team-soft) 0%,rgba(0,0,0,0) 240px);}
+    background:linear-gradient(180deg,var(--team-soft) 0%,rgba(0,0,0,0) 240px)}
   header{padding:22px 20px 10px;text-align:center}
   header h1{margin:0;font-size:20px;letter-spacing:2px;font-weight:800}
   header .sub{margin-top:6px;font-size:12px;color:var(--sub);letter-spacing:1px}
@@ -44,7 +43,7 @@
   .teams{display:flex;flex-direction:column;gap:12px}
   .team-btn{border:2px solid var(--line);background:var(--card);color:var(--txt);
     padding:20px;border-radius:18px;font-size:19px;font-weight:800;cursor:pointer;
-    display:flex;align-items:center;gap:14px;transition:.15s}
+    display:flex;align-items:center;gap:14px;transition:.15s;font-family:inherit}
   .team-btn .dot{width:22px;height:22px;border-radius:50%}
   .team-btn:active{transform:scale(.98)}
   .team-btn.red:hover,.team-btn.red.sel{border-color:var(--red);background:rgba(226,68,75,.14)}
@@ -55,13 +54,15 @@
     background:var(--card2);color:var(--txt);font-size:18px;font-weight:700;text-align:center;
     outline:none;font-family:inherit}
   input:focus{border-color:var(--team)}
-  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   input[type=number]{-moz-appearance:textfield}
   .btn{width:100%;padding:17px;border:none;border-radius:14px;background:var(--team);color:#fff;
     font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s}
   .btn:active{transform:scale(.98)}
-  .btn:disabled{opacity:.35;cursor:not-allowed}
   .btn.ghost{background:transparent;border:2px solid var(--line);color:var(--sub)}
+  .btn.sm{padding:12px;font-size:14px;border-radius:12px}
+  .btn.danger{background:transparent;border:2px solid rgba(226,68,75,.5);color:#ff8a8a}
   .btn-row{display:flex;gap:10px;margin-top:6px}
   .spacer{flex:1}
   .chips-box{text-align:center;padding:26px 20px}
@@ -87,6 +88,40 @@
   .final .lbl{font-size:14px;color:var(--sub);font-weight:700}
   .final .num{font-size:64px;font-weight:900;color:var(--team);line-height:1.1;margin:8px 0}
   .step{font-size:12px;color:var(--sub);letter-spacing:1px;font-weight:800;margin-bottom:8px}
+
+  /* 저장 관련 */
+  .notice{border-radius:14px;padding:13px 15px;font-size:13px;font-weight:700;line-height:1.6;margin-bottom:12px}
+  .notice.ok{background:rgba(64,196,140,.12);border:1px solid rgba(64,196,140,.4);color:#7ce0b0}
+  .notice.warn{background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.35);color:#f5cd6e}
+  .resume{border:2px dashed var(--line);border-radius:18px;padding:16px;margin-bottom:14px;background:var(--card)}
+  .resume .t{font-size:13px;color:var(--sub);font-weight:800;margin-bottom:6px}
+  .resume .d{font-size:15px;font-weight:800;margin-bottom:12px}
+  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .chip-f{padding:9px 14px;border-radius:999px;border:2px solid var(--line);background:transparent;
+    color:var(--sub);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+  .chip-f.on{color:#fff;border-color:var(--team);background:var(--team)}
+  .rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:10px}
+  .rec-top{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+  .rec-dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .rec-name{font-size:16px;font-weight:900;flex:1}
+  .rec-left{font-size:20px;font-weight:900}
+  .rec-left small{font-size:12px;color:var(--sub);font-weight:700;margin-left:2px}
+  .rec-rounds{display:flex;gap:6px;margin-bottom:9px}
+  .rec-r{flex:1;background:var(--card2);border-radius:9px;padding:7px 2px;text-align:center}
+  .rec-r .rn{font-size:10px;color:var(--sub);font-weight:800}
+  .rec-r .rv{font-size:14px;font-weight:900;margin-top:2px}
+  .rec-bot{display:flex;justify-content:space-between;align-items:center}
+  .rec-time{font-size:11px;color:var(--sub);font-weight:700}
+  .rec-del{background:none;border:none;color:#ff8a8a;font-size:12px;font-weight:800;
+    cursor:pointer;padding:4px 8px;font-family:inherit}
+  .sum{background:var(--card2);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+  .sum-h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;margin-bottom:9px}
+  .sum-g{display:flex;gap:10px}
+  .sum-i{flex:1;text-align:center}
+  .sum-i .k{font-size:11px;color:var(--sub);font-weight:700}
+  .sum-i .v{font-size:17px;font-weight:900;margin-top:3px}
+  .empty{text-align:center;padding:44px 20px;color:var(--sub);font-size:14px;font-weight:700;line-height:1.8}
+  #copy-src{position:fixed;left:-9999px;top:0;opacity:0}
 </style>
 </head>
 <body>
@@ -100,6 +135,17 @@
 
     <!-- 1. 팀 선택 -->
     <section class="screen on" id="s-team">
+      <div class="notice warn" id="ls-warn" style="display:none">
+        이 브라우저에서는 저장 기능을 쓸 수 없습니다(시크릿 모드 등). 게임 진행은 가능하지만 기록이 남지 않습니다.
+      </div>
+      <div class="resume" id="resume-box" style="display:none">
+        <div class="t">진행 중인 게임이 있습니다</div>
+        <div class="d" id="resume-desc"></div>
+        <div class="btn-row">
+          <button class="btn ghost sm" id="btn-resume-del">삭제</button>
+          <button class="btn sm" id="btn-resume">이어하기</button>
+        </div>
+      </div>
       <div class="card">
         <h2>어느 팀인가요?</h2>
         <p class="muted">소속 팀을 선택해 주세요.</p>
@@ -109,6 +155,8 @@
           <button class="team-btn blue" data-team="blue"><span class="dot" style="background:#2f7ae5"></span>블루팀</button>
         </div>
       </div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btn-open-records">저장된 조별 기록 보기 (<span id="rec-count">0</span>)</button>
     </section>
 
     <!-- 2. 조 입력 -->
@@ -182,7 +230,7 @@
       </div>
     </section>
 
-    <!-- 7. 결과 -->
+    <!-- 7. 라운드 결과 -->
     <section class="screen" id="s-result">
       <div class="card" style="text-align:center;padding:28px 20px">
         <div class="step" id="result-step"></div>
@@ -202,6 +250,17 @@
         <div class="num" id="final-left"></div>
         <div class="lbl">남은 칩의 갯수</div>
       </div>
+
+      <div class="notice ok" id="save-ok" style="display:none"></div>
+      <div class="card" id="dup-box" style="display:none">
+        <h2 style="font-size:15px" id="dup-title"></h2>
+        <p class="muted">덮어쓰면 이전 기록은 사라집니다. 별도 저장하면 두 기록이 모두 남습니다.</p>
+        <div class="btn-row">
+          <button class="btn ghost" id="btn-dup-new">별도 저장</button>
+          <button class="btn" id="btn-dup-over">덮어쓰기</button>
+        </div>
+      </div>
+
       <div class="card">
         <h2>라운드별 기록</h2>
         <table>
@@ -210,44 +269,146 @@
           <tfoot><tr><td>합계</td><td id="final-total"></td><td id="final-rest"></td></tr></tfoot>
         </table>
       </div>
+
+      <div class="btn-row" style="margin-bottom:12px">
+        <button class="btn ghost sm" id="btn-copy">결과 복사</button>
+        <button class="btn ghost sm" id="btn-final-records">저장된 기록</button>
+      </div>
       <div class="spacer"></div>
-      <button class="btn ghost" id="btn-restart">처음부터 다시 하기</button>
+      <button class="btn" id="btn-restart">처음부터 다시 하기</button>
+    </section>
+
+    <!-- 9. 저장된 기록 -->
+    <section class="screen" id="s-records">
+      <div id="rec-summary"></div>
+      <div class="filters" id="rec-filters">
+        <button class="chip-f on" data-f="all">전체</button>
+        <button class="chip-f" data-f="red">레드팀</button>
+        <button class="chip-f" data-f="yellow">옐로팀</button>
+        <button class="chip-f" data-f="blue">블루팀</button>
+      </div>
+      <div id="rec-list"></div>
+      <div class="spacer"></div>
+      <div class="btn-row" style="margin-bottom:10px">
+        <button class="btn ghost sm" id="btn-csv">CSV 내보내기</button>
+        <button class="btn ghost sm" id="btn-copy-all">전체 복사</button>
+      </div>
+      <button class="btn danger sm" id="btn-clear" style="margin-bottom:10px">전체 기록 삭제</button>
+      <button class="btn" id="btn-rec-close">닫기</button>
     </section>
 
   </main>
 </div>
+<textarea id="copy-src" readonly aria-hidden="true"></textarea>
 
 <script>
 (function(){
   "use strict";
 
   var TOTAL_CHIPS = 25, TOTAL_ROUNDS = 5;
+  var KEY_RECORDS = "chipDilemma.records.v1";
+  var KEY_PROGRESS = "chipDilemma.progress.v1";
   var TEAMS = {
     red:    {name:"레드팀", color:"#e2444b", soft:"rgba(226,68,75,.16)"},
     yellow: {name:"옐로팀", color:"#f0b429", soft:"rgba(240,180,41,.16)"},
     blue:   {name:"블루팀", color:"#2f7ae5", soft:"rgba(47,122,229,.16)"}
   };
+  var TEAM_ORDER = ["red","yellow","blue"];
 
-  var state = { team:null, group:"", chips:TOTAL_CHIPS, round:1, bet:0, history:[] };
+  var state = newState();
+  var filter = "all";
+  var pendingRecord = null;   // 중복 확인 대기 중인 결과
 
+  function newState(){
+    return { team:null, group:"", chips:TOTAL_CHIPS, round:1, bet:0, history:[] };
+  }
   function $(id){ return document.getElementById(id); }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
   function show(id){
     var list = document.querySelectorAll(".screen");
     for(var i=0;i<list.length;i++){ list[i].classList.remove("on"); }
     $(id).classList.add("on");
     window.scrollTo(0,0);
   }
-  function label(){ return TEAMS[state.team].name + " " + state.group + "조"; }
+  function applyTheme(team){
+    var t = team ? TEAMS[team] : null;
+    document.documentElement.style.setProperty("--team", t ? t.color : "#6c7cff");
+    document.documentElement.style.setProperty("--team-soft", t ? t.soft : "rgba(108,124,255,.15)");
+  }
+  function label(s){ s = s || state; return TEAMS[s.team].name + " " + s.group + "조"; }
+  function sumBet(h){ var n=0; for(var i=0;i<h.length;i++){ n += h[i].bet; } return n; }
 
-  /* ---------- 1. 팀 선택 ---------- */
+  /* ================= 저장소 ================= */
+  var LS_OK = (function(){
+    try{
+      var k = "__chipTest__";
+      window.localStorage.setItem(k, "1");
+      window.localStorage.removeItem(k);
+      return true;
+    }catch(e){ return false; }
+  })();
+
+  function readJSON(key, fallback){
+    if(!LS_OK){ return fallback; }
+    try{
+      var raw = window.localStorage.getItem(key);
+      if(!raw){ return fallback; }
+      var v = JSON.parse(raw);
+      return (v === null || v === undefined) ? fallback : v;
+    }catch(e){ return fallback; }
+  }
+  function writeJSON(key, value){
+    if(!LS_OK){ return false; }
+    try{ window.localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e){ return false; }
+  }
+  function removeKey(key){
+    if(!LS_OK){ return; }
+    try{ window.localStorage.removeItem(key); }catch(e){}
+  }
+
+  function loadRecords(){
+    var v = readJSON(KEY_RECORDS, []);
+    return Object.prototype.toString.call(v) === "[object Array]" ? v : [];
+  }
+  function saveRecords(list){ return writeJSON(KEY_RECORDS, list); }
+
+  function saveProgress(){
+    if(!state.team){ return; }
+    writeJSON(KEY_PROGRESS, {
+      team: state.team, group: state.group, chips: state.chips,
+      round: state.round, history: state.history, updatedAt: Date.now()
+    });
+  }
+  function clearProgress(){ removeKey(KEY_PROGRESS); }
+  function loadProgress(){
+    var p = readJSON(KEY_PROGRESS, null);
+    if(!p || !p.team || !TEAMS[p.team]) { return null; }
+    if(typeof p.chips !== "number" || typeof p.round !== "number"){ return null; }
+    if(Object.prototype.toString.call(p.history) !== "[object Array]"){ return null; }
+    if(p.round < 1 || p.round > TOTAL_ROUNDS){ return null; }
+    return p;
+  }
+
+  function fmtTime(ts){
+    var d = new Date(ts);
+    function pad(n){ return (n<10?"0":"") + n; }
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()) +
+           " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
+  /* ================= 1. 팀 선택 ================= */
   var teamBtns = document.querySelectorAll(".team-btn");
   for(var i=0;i<teamBtns.length;i++){
     teamBtns[i].addEventListener("click", function(){
+      state = newState();
       state.team = this.getAttribute("data-team");
-      var t = TEAMS[state.team];
-      document.documentElement.style.setProperty("--team", t.color);
-      document.documentElement.style.setProperty("--team-soft", t.soft);
-      $("g-team").textContent = t.name;
+      applyTheme(state.team);
+      $("g-team").textContent = TEAMS[state.team].name;
       $("err-group").textContent = "";
       $("in-group").value = "";
       show("s-group");
@@ -255,7 +416,7 @@
     });
   }
 
-  /* ---------- 2. 조 입력 ---------- */
+  /* ================= 2. 조 입력 ================= */
   function submitGroup(){
     var v = $("in-group").value.trim();
     if(!v){ $("err-group").textContent = "조 이름을 입력해 주세요."; return; }
@@ -269,14 +430,16 @@
   $("in-group").addEventListener("keydown", function(e){ if(e.key === "Enter"){ submitGroup(); } });
   $("btn-back-team").addEventListener("click", function(){
     $("badge").classList.remove("on");
+    applyTheme(null);
     show("s-team");
   });
 
-  /* ---------- 3. 칩 확인 ---------- */
+  /* ================= 3. 칩 확인 ================= */
   $("btn-confirm25").addEventListener("click", function(){ goReady(); });
 
-  /* ---------- 4. 라운드 시작 대기 ---------- */
+  /* ================= 4. 라운드 시작 대기 ================= */
   function goReady(){
+    saveProgress();
     $("ready-left").textContent = state.chips;
     $("ready-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
     $("ready-title").textContent = state.round + "라운드";
@@ -288,7 +451,7 @@
   }
   $("btn-start-round").addEventListener("click", function(){ goBet(); });
 
-  /* ---------- 5. 배팅 입력 ---------- */
+  /* ================= 5. 배팅 입력 ================= */
   function goBet(){
     $("bet-left").textContent = state.chips;
     $("bet-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
@@ -306,10 +469,7 @@
     var n = Number(raw);
     if(!isFinite(n) || Math.floor(n) !== n){ err.textContent = "정수로 입력해 주세요."; return; }
     if(n < 0){ err.textContent = "0개 미만은 입력할 수 없습니다."; return; }
-    if(n > state.chips){
-      err.textContent = "칩의 갯수는 " + state.chips + "개를 넘을 수 없습니다.";
-      return;
-    }
+    if(n > state.chips){ err.textContent = "칩의 갯수는 " + state.chips + "개를 넘을 수 없습니다."; return; }
     err.textContent = "";
     state.bet = n;
     goConfirm();
@@ -317,7 +477,7 @@
   $("btn-bet-next").addEventListener("click", submitBet);
   $("in-bet").addEventListener("keydown", function(e){ if(e.key === "Enter"){ submitBet(); } });
 
-  /* ---------- 6. 확인 ---------- */
+  /* ================= 6. 확인 ================= */
   function goConfirm(){
     var left = state.chips - state.bet;
     $("confirm-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
@@ -335,10 +495,11 @@
   $("btn-yes").addEventListener("click", function(){
     state.chips -= state.bet;
     state.history.push({ round: state.round, bet: state.bet, left: state.chips });
+    saveProgress();
     goResult();
   });
 
-  /* ---------- 7. 결과 ---------- */
+  /* ================= 7. 라운드 결과 ================= */
   function goResult(){
     $("result-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
     $("result-msg").textContent = state.bet + "개의 칩을 배팅하였습니다.";
@@ -358,32 +519,311 @@
     }
   });
 
-  /* ---------- 8. 최종 ---------- */
+  /* ================= 8. 최종 + 저장 ================= */
+  function buildRecord(){
+    return {
+      id: "r" + Date.now() + Math.floor(Math.random()*1000),
+      team: state.team,
+      teamName: TEAMS[state.team].name,
+      group: state.group,
+      history: state.history.slice(),
+      totalBet: sumBet(state.history),
+      left: state.chips,
+      savedAt: Date.now()
+    };
+  }
+  function commitRecord(rec, overwriteId){
+    var list = loadRecords();
+    if(overwriteId){
+      var out = [];
+      for(var i=0;i<list.length;i++){ if(list[i].id !== overwriteId){ out.push(list[i]); } }
+      list = out;
+    }
+    list.push(rec);
+    var ok = saveRecords(list);
+    clearProgress();
+    refreshCount();
+    return ok;
+  }
+  function showSaveOk(text){
+    var el = $("save-ok");
+    el.textContent = text;
+    el.style.display = "block";
+    $("dup-box").style.display = "none";
+  }
+
   function goFinal(){
     $("final-title").textContent = label();
     $("final-left").textContent = state.chips;
-    var body = $("final-body"), total = 0, html = "";
+    var html = "", total = 0;
     for(var i=0;i<state.history.length;i++){
       var h = state.history[i];
       total += h.bet;
       html += "<tr><td>" + h.round + "라운드</td><td>" + h.bet + "개</td><td>" + h.left + "개</td></tr>";
     }
-    body.innerHTML = html;
+    $("final-body").innerHTML = html;
     $("final-total").textContent = total + "개";
     $("final-rest").textContent = state.chips + "개";
+
+    $("save-ok").style.display = "none";
+    $("dup-box").style.display = "none";
+    pendingRecord = null;
+
+    if(!LS_OK){
+      var w = $("save-ok");
+      w.className = "notice warn";
+      w.textContent = "이 브라우저에서는 기록을 저장할 수 없습니다. 아래 ‘결과 복사’로 결과를 전달해 주세요.";
+      w.style.display = "block";
+      show("s-final");
+      return;
+    }
+    $("save-ok").className = "notice ok";
+
+    var rec = buildRecord();
+    var dup = null, list = loadRecords();
+    for(var j=0;j<list.length;j++){
+      if(list[j].team === rec.team && String(list[j].group) === String(rec.group)){ dup = list[j]; }
+    }
+    if(dup){
+      pendingRecord = { rec: rec, dupId: dup.id };
+      $("dup-title").textContent = label() + "의 기록이 이미 저장되어 있습니다. (" + fmtTime(dup.savedAt) + " · 잔여 " + dup.left + "개)";
+      $("dup-box").style.display = "block";
+    } else {
+      showSaveOk(commitRecord(rec)
+        ? "✅ " + label() + " 결과가 저장되었습니다."
+        : "저장 공간이 부족해 기록하지 못했습니다. ‘결과 복사’를 이용해 주세요.");
+    }
     show("s-final");
   }
+  $("btn-dup-over").addEventListener("click", function(){
+    if(!pendingRecord){ return; }
+    var ok = commitRecord(pendingRecord.rec, pendingRecord.dupId);
+    showSaveOk(ok ? "✅ 기존 기록을 덮어쓰고 저장했습니다." : "저장에 실패했습니다.");
+    pendingRecord = null;
+  });
+  $("btn-dup-new").addEventListener("click", function(){
+    if(!pendingRecord){ return; }
+    var ok = commitRecord(pendingRecord.rec);
+    showSaveOk(ok ? "✅ 별도 기록으로 저장했습니다." : "저장에 실패했습니다.");
+    pendingRecord = null;
+  });
 
-  /* ---------- 재시작 ---------- */
+  /* ================= 결과 복사 / CSV ================= */
+  function recLine(r){
+    var bets = [];
+    for(var i=0;i<r.history.length;i++){ bets.push(r.history[i].bet); }
+    return r.teamName + " " + r.group + "조 | 배팅 " + bets.join("/") +
+           " | 총 배팅 " + r.totalBet + "개 | 잔여 " + r.left + "개";
+  }
+  function copyText(text, btn, doneLabel){
+    var original = btn.textContent;
+    function done(ok){
+      btn.textContent = ok ? doneLabel : "복사 실패";
+      setTimeout(function(){ btn.textContent = original; }, 1600);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ done(fallbackCopy(text)); });
+    } else {
+      done(fallbackCopy(text));
+    }
+  }
+  function fallbackCopy(text){
+    var ta = $("copy-src");
+    ta.value = text;
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    try{ return document.execCommand("copy"); }catch(e){ return false; }
+  }
+  $("btn-copy").addEventListener("click", function(){
+    copyText(recLine(buildRecord()), this, "복사됨!");
+  });
+  $("btn-copy-all").addEventListener("click", function(){
+    var list = visibleRecords();
+    if(!list.length){ return; }
+    var lines = [];
+    for(var i=0;i<list.length;i++){ lines.push(recLine(list[i])); }
+    copyText(lines.join("\n"), this, "복사됨!");
+  });
+
+  function csvCell(v){
+    var s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  $("btn-csv").addEventListener("click", function(){
+    var list = visibleRecords();
+    if(!list.length){ return; }
+    var rows = [["팀","조","1R","2R","3R","4R","5R","총배팅","잔여칩","저장시각"]];
+    for(var i=0;i<list.length;i++){
+      var r = list[i], row = [r.teamName, r.group];
+      for(var k=0;k<TOTAL_ROUNDS;k++){ row.push(r.history[k] ? r.history[k].bet : ""); }
+      row.push(r.totalBet, r.left, fmtTime(r.savedAt));
+      rows.push(row);
+    }
+    var csv = "";
+    for(var a=0;a<rows.length;a++){
+      var line = [];
+      for(var b=0;b<rows[a].length;b++){ line.push(csvCell(rows[a][b])); }
+      csv += line.join(",") + "\r\n";
+    }
+    var blob = new Blob(["﻿" + csv], {type:"text/csv;charset=utf-8;"});
+    var url = URL.createObjectURL(blob);
+    var a2 = document.createElement("a");
+    a2.href = url;
+    var d = new Date();
+    function p2(n){ return (n<10?"0":"") + n; }
+    a2.download = "chip-dilemma-records-" + d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + ".csv";
+    document.body.appendChild(a2);
+    a2.click();
+    document.body.removeChild(a2);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  });
+
+  /* ================= 9. 저장된 기록 화면 ================= */
+  function sortRecords(list){
+    return list.slice().sort(function(a,b){
+      var d = TEAM_ORDER.indexOf(a.team) - TEAM_ORDER.indexOf(b.team);
+      if(d !== 0){ return d; }
+      var na = Number(a.group), nb = Number(b.group);
+      if(isFinite(na) && isFinite(nb) && na !== nb){ return na - nb; }
+      if(a.group !== b.group){ return a.group < b.group ? -1 : 1; }
+      return a.savedAt - b.savedAt;
+    });
+  }
+  function visibleRecords(){
+    var all = sortRecords(loadRecords());
+    if(filter === "all"){ return all; }
+    var out = [];
+    for(var i=0;i<all.length;i++){ if(all[i].team === filter){ out.push(all[i]); } }
+    return out;
+  }
+  function refreshCount(){ $("rec-count").textContent = loadRecords().length; }
+
+  function renderRecords(){
+    var all = loadRecords();
+    var sum = $("rec-summary"), listEl = $("rec-list");
+
+    var sumHtml = "";
+    for(var t=0;t<TEAM_ORDER.length;t++){
+      var key = TEAM_ORDER[t], cnt = 0, bet = 0, left = 0;
+      for(var i=0;i<all.length;i++){
+        if(all[i].team === key){ cnt++; bet += all[i].totalBet; left += all[i].left; }
+      }
+      if(!cnt){ continue; }
+      sumHtml +=
+        '<div class="sum"><div class="sum-h"><span class="rec-dot" style="background:' + TEAMS[key].color + '"></span>' +
+        TEAMS[key].name + '</div><div class="sum-g">' +
+        '<div class="sum-i"><div class="k">조 수</div><div class="v">' + cnt + '</div></div>' +
+        '<div class="sum-i"><div class="k">팀 총 배팅</div><div class="v">' + bet + '</div></div>' +
+        '<div class="sum-i"><div class="k">팀 총 잔여</div><div class="v">' + left + '</div></div>' +
+        '</div></div>';
+    }
+    sum.innerHTML = sumHtml;
+
+    var list = visibleRecords();
+    if(!list.length){
+      listEl.innerHTML = '<div class="empty">저장된 기록이 없습니다.<br>게임을 끝까지 진행하면 자동으로 저장됩니다.</div>';
+      return;
+    }
+    var html = "";
+    for(var j=0;j<list.length;j++){
+      var r = list[j], rounds = "";
+      for(var k=0;k<TOTAL_ROUNDS;k++){
+        rounds += '<div class="rec-r"><div class="rn">' + (k+1) + 'R</div><div class="rv">' +
+                  (r.history[k] ? r.history[k].bet : "-") + '</div></div>';
+      }
+      html +=
+        '<div class="rec"><div class="rec-top">' +
+        '<span class="rec-dot" style="background:' + TEAMS[r.team].color + '"></span>' +
+        '<span class="rec-name">' + esc(r.teamName) + ' ' + esc(r.group) + '조</span>' +
+        '<span class="rec-left">' + r.left + '<small>개 잔여</small></span></div>' +
+        '<div class="rec-rounds">' + rounds + '</div>' +
+        '<div class="rec-bot"><span class="rec-time">총 배팅 ' + r.totalBet + '개 · ' + fmtTime(r.savedAt) + '</span>' +
+        '<button class="rec-del" data-id="' + esc(r.id) + '">삭제</button></div></div>';
+    }
+    listEl.innerHTML = html;
+  }
+
+  $("rec-list").addEventListener("click", function(e){
+    var btn = e.target.closest ? e.target.closest(".rec-del") : null;
+    if(!btn){ return; }
+    var id = btn.getAttribute("data-id");
+    if(!window.confirm("이 기록을 삭제할까요?")){ return; }
+    var list = loadRecords(), out = [];
+    for(var i=0;i<list.length;i++){ if(list[i].id !== id){ out.push(list[i]); } }
+    saveRecords(out);
+    refreshCount();
+    renderRecords();
+  });
+
+  var fbtns = document.querySelectorAll("#rec-filters .chip-f");
+  for(var f=0; f<fbtns.length; f++){
+    fbtns[f].addEventListener("click", function(){
+      filter = this.getAttribute("data-f");
+      for(var q=0;q<fbtns.length;q++){ fbtns[q].classList.remove("on"); }
+      this.classList.add("on");
+      renderRecords();
+    });
+  }
+  $("btn-clear").addEventListener("click", function(){
+    if(!loadRecords().length){ return; }
+    if(!window.confirm("저장된 모든 조의 기록을 삭제할까요? 되돌릴 수 없습니다.")){ return; }
+    saveRecords([]);
+    refreshCount();
+    renderRecords();
+  });
+
+  var recordsFrom = "s-team";
+  function openRecords(from){
+    recordsFrom = from;
+    renderRecords();
+    show("s-records");
+  }
+  $("btn-open-records").addEventListener("click", function(){ openRecords("s-team"); });
+  $("btn-final-records").addEventListener("click", function(){ openRecords("s-final"); });
+  $("btn-rec-close").addEventListener("click", function(){ show(recordsFrom); });
+
+  /* ================= 이어하기 / 재시작 ================= */
+  function renderResume(){
+    var p = loadProgress();
+    var box = $("resume-box");
+    if(!p){ box.style.display = "none"; return; }
+    $("resume-desc").textContent =
+      TEAMS[p.team].name + " " + p.group + "조 · " + p.round + "라운드 · 남은 칩 " + p.chips + "개";
+    box.style.display = "block";
+  }
+  $("btn-resume").addEventListener("click", function(){
+    var p = loadProgress();
+    if(!p){ renderResume(); return; }
+    state = { team:p.team, group:p.group, chips:p.chips, round:p.round, bet:0, history:p.history };
+    applyTheme(state.team);
+    $("badge").textContent = label();
+    $("badge").classList.add("on");
+    $("in-bet").value = "";
+    goReady();
+  });
+  $("btn-resume-del").addEventListener("click", function(){
+    if(!window.confirm("진행 중인 게임을 삭제할까요?")){ return; }
+    clearProgress();
+    renderResume();
+  });
+
   $("btn-restart").addEventListener("click", function(){
-    state = { team:null, group:"", chips:TOTAL_CHIPS, round:1, bet:0, history:[] };
-    document.documentElement.style.setProperty("--team", "#6c7cff");
-    document.documentElement.style.setProperty("--team-soft", "rgba(108,124,255,.15)");
+    state = newState();
+    pendingRecord = null;
+    clearProgress();
+    applyTheme(null);
     $("badge").classList.remove("on");
     $("in-group").value = "";
     $("in-bet").value = "";
+    refreshCount();
+    renderResume();
     show("s-team");
   });
+
+  /* ================= 초기화 ================= */
+  if(!LS_OK){ $("ls-warn").style.display = "block"; }
+  refreshCount();
+  renderResume();
 })();
 </script>
 </body>
