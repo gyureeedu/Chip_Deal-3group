@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>칩의 딜레마</title>
+<style>
+  :root{
+    --bg:#0f1220;
+    --card:#191d33;
+    --card2:#212642;
+    --line:#2e3455;
+    --txt:#f2f4ff;
+    --sub:#9aa3c7;
+    --accent:#6c7cff;
+    --red:#e2444b;
+    --yellow:#f0b429;
+    --blue:#2f7ae5;
+    --team:#6c7cff;
+    --team-soft:rgba(108,124,255,.15);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;min-height:100vh;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    display:flex;justify-content:center;padding:0;
+  }
+  #app{width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,var(--team-soft) 0%,rgba(0,0,0,0) 240px);}
+  header{padding:22px 20px 10px;text-align:center}
+  header h1{margin:0;font-size:20px;letter-spacing:2px;font-weight:800}
+  header .sub{margin-top:6px;font-size:12px;color:var(--sub);letter-spacing:1px}
+  .badge{display:none;margin:10px auto 0;padding:6px 14px;border-radius:999px;
+    background:var(--team);color:#fff;font-weight:800;font-size:13px;letter-spacing:1px}
+  .badge.on{display:inline-block}
+  main{flex:1;padding:8px 20px 28px;display:flex;flex-direction:column}
+  .screen{display:none;animation:fade .25s ease}
+  .screen.on{display:flex;flex-direction:column;flex:1}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:14px}
+  h2{margin:0 0 14px;font-size:17px;font-weight:800}
+  p{margin:0 0 10px;font-size:14px;line-height:1.65;color:#d9deff}
+  .muted{color:var(--sub);font-size:13px}
+  .teams{display:flex;flex-direction:column;gap:12px}
+  .team-btn{border:2px solid var(--line);background:var(--card);color:var(--txt);
+    padding:20px;border-radius:18px;font-size:19px;font-weight:800;cursor:pointer;
+    display:flex;align-items:center;gap:14px;transition:.15s}
+  .team-btn .dot{width:22px;height:22px;border-radius:50%}
+  .team-btn:active{transform:scale(.98)}
+  .team-btn.red:hover,.team-btn.red.sel{border-color:var(--red);background:rgba(226,68,75,.14)}
+  .team-btn.yellow:hover,.team-btn.yellow.sel{border-color:var(--yellow);background:rgba(240,180,41,.14)}
+  .team-btn.blue:hover,.team-btn.blue.sel{border-color:var(--blue);background:rgba(47,122,229,.14)}
+  input[type=text],input[type=number]{
+    width:100%;padding:16px;border-radius:14px;border:2px solid var(--line);
+    background:var(--card2);color:var(--txt);font-size:18px;font-weight:700;text-align:center;
+    outline:none;font-family:inherit}
+  input:focus{border-color:var(--team)}
+  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield}
+  .btn{width:100%;padding:17px;border:none;border-radius:14px;background:var(--team);color:#fff;
+    font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:2px solid var(--line);color:var(--sub)}
+  .btn-row{display:flex;gap:10px;margin-top:6px}
+  .spacer{flex:1}
+  .chips-box{text-align:center;padding:26px 20px}
+  .chips-num{font-size:56px;font-weight:900;line-height:1;color:var(--team)}
+  .chips-unit{font-size:16px;color:var(--sub);margin-top:8px;font-weight:700}
+  .rule{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+  .rule:first-of-type{border-top:none}
+  .rule .ico{font-size:20px;line-height:1.4}
+  .rule b{color:#fff}
+  .stat{display:flex;justify-content:space-between;align-items:center;
+    background:var(--card2);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+  .stat .k{font-size:13px;color:var(--sub);font-weight:700}
+  .stat .v{font-size:22px;font-weight:900}
+  .err{color:#ff8a8a;font-size:13px;min-height:18px;margin-top:8px;text-align:center;font-weight:700}
+  .ask{font-size:16px;font-weight:800;text-align:center;line-height:1.7;margin:4px 0 14px}
+  .big{color:var(--team)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:11px 6px;text-align:center;border-bottom:1px solid var(--line)}
+  th{color:var(--sub);font-size:12px;font-weight:700}
+  td{font-weight:700}
+  tfoot td{border-bottom:none;color:var(--team);font-weight:900}
+  .final{text-align:center;padding:24px 20px}
+  .final .lbl{font-size:14px;color:var(--sub);font-weight:700}
+  .final .num{font-size:64px;font-weight:900;color:var(--team);line-height:1.1;margin:8px 0}
+  .step{font-size:12px;color:var(--sub);letter-spacing:1px;font-weight:800;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>칩의 딜레마</h1>
+    <div class="sub">CHIP DILEMMA · 5 ROUNDS · 25 CHIPS</div>
+    <div class="badge" id="badge"></div>
+  </header>
+  <main>
+
+    <!-- 1. 팀 선택 -->
+    <section class="screen on" id="s-team">
+      <div class="card">
+        <h2>어느 팀인가요?</h2>
+        <p class="muted">소속 팀을 선택해 주세요.</p>
+        <div class="teams">
+          <button class="team-btn red" data-team="red"><span class="dot" style="background:#e2444b"></span>레드팀</button>
+          <button class="team-btn yellow" data-team="yellow"><span class="dot" style="background:#f0b429"></span>옐로팀</button>
+          <button class="team-btn blue" data-team="blue"><span class="dot" style="background:#2f7ae5"></span>블루팀</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 조 입력 -->
+    <section class="screen" id="s-group">
+      <div class="card">
+        <div class="step">STEP 2</div>
+        <h2><span id="g-team"></span>을 선택했습니다.</h2>
+        <p class="muted">조 이름을 입력해 주세요. (예: 1)</p>
+        <input type="text" id="in-group" placeholder="조 이름 입력" maxlength="12" autocomplete="off">
+        <div class="err" id="err-group"></div>
+        <button class="btn" id="btn-group">확인</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btn-back-team">팀 다시 선택</button>
+    </section>
+
+    <!-- 3. 셋팅 확인 -->
+    <section class="screen" id="s-setup">
+      <div class="card chips-box">
+        <p class="muted" style="margin-bottom:14px">셋팅이 완료되었습니다.</p>
+        <h2 style="font-size:24px;margin-bottom:20px" id="setup-title"></h2>
+        <div class="chips-num">25</div>
+        <div class="chips-unit">개의 칩을 받았습니다</div>
+      </div>
+      <div class="card">
+        <div class="rule"><span class="ico">🎯</span><div>5개 라운드 동안 이 <b>25개의 칩</b>에서 배팅할 수 있습니다.</div></div>
+        <div class="rule"><span class="ico">🏆</span><div>우리 조가 우승하려면 <b>먼저 우리 팀이 승리</b>해야 합니다.</div></div>
+        <div class="rule"><span class="ico">🔥</span><div>팀이 승리하려면 <b>칩을 많이 배팅</b>해야 합니다.</div></div>
+        <div class="rule"><span class="ico">💰</span><div>우리 조가 우승하려면 <b>칩을 많이 남겨야</b> 합니다.</div></div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="btn-confirm25">25개의 칩을 확인했습니다</button>
+    </section>
+
+    <!-- 4. 라운드 시작 대기 -->
+    <section class="screen" id="s-ready">
+      <div class="stat"><span class="k">남은 칩</span><span class="v"><span id="ready-left"></span>개</span></div>
+      <div class="card" style="text-align:center;padding:34px 20px">
+        <div class="step" id="ready-step"></div>
+        <h2 style="font-size:26px;margin:6px 0 10px" id="ready-title"></h2>
+        <p class="muted" id="ready-msg"></p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="btn-start-round"></button>
+    </section>
+
+    <!-- 5. 배팅 입력 -->
+    <section class="screen" id="s-bet">
+      <div class="stat"><span class="k">현재 보유 칩</span><span class="v"><span id="bet-left"></span>개</span></div>
+      <div class="card">
+        <div class="step" id="bet-step"></div>
+        <h2 id="bet-title"></h2>
+        <p class="muted" id="bet-guide"></p>
+        <input type="number" id="in-bet" inputmode="numeric" min="0" placeholder="0" autocomplete="off">
+        <div class="err" id="err-bet"></div>
+        <button class="btn" id="btn-bet-next">입력 완료</button>
+      </div>
+    </section>
+
+    <!-- 6. 확인 -->
+    <section class="screen" id="s-confirm">
+      <div class="card">
+        <div class="step" id="confirm-step"></div>
+        <div class="ask" id="confirm-ask"></div>
+        <div class="stat"><span class="k">배팅할 칩</span><span class="v"><span id="confirm-bet"></span>개</span></div>
+        <div class="stat"><span class="k">남은 칩</span><span class="v"><span id="confirm-left"></span>개</span></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="btn-no">아니오</button>
+          <button class="btn" id="btn-yes">예</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. 결과 -->
+    <section class="screen" id="s-result">
+      <div class="card" style="text-align:center;padding:28px 20px">
+        <div class="step" id="result-step"></div>
+        <h2 style="font-size:20px;margin:8px 0 16px" id="result-msg"></h2>
+        <div class="chips-num" id="result-left"></div>
+        <div class="chips-unit">남은 칩의 갯수</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="btn-result-next"></button>
+    </section>
+
+    <!-- 8. 최종 -->
+    <section class="screen" id="s-final">
+      <div class="card final">
+        <div class="lbl">5라운드 종료</div>
+        <h2 style="font-size:20px;margin:8px 0 0" id="final-title"></h2>
+        <div class="num" id="final-left"></div>
+        <div class="lbl">남은 칩의 갯수</div>
+      </div>
+      <div class="card">
+        <h2>라운드별 기록</h2>
+        <table>
+          <thead><tr><th>라운드</th><th>배팅</th><th>남은 칩</th></tr></thead>
+          <tbody id="final-body"></tbody>
+          <tfoot><tr><td>합계</td><td id="final-total"></td><td id="final-rest"></td></tr></tfoot>
+        </table>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btn-restart">처음부터 다시 하기</button>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TOTAL_CHIPS = 25, TOTAL_ROUNDS = 5;
+  var TEAMS = {
+    red:    {name:"레드팀", color:"#e2444b", soft:"rgba(226,68,75,.16)"},
+    yellow: {name:"옐로팀", color:"#f0b429", soft:"rgba(240,180,41,.16)"},
+    blue:   {name:"블루팀", color:"#2f7ae5", soft:"rgba(47,122,229,.16)"}
+  };
+
+  var state = { team:null, group:"", chips:TOTAL_CHIPS, round:1, bet:0, history:[] };
+
+  function $(id){ return document.getElementById(id); }
+  function show(id){
+    var list = document.querySelectorAll(".screen");
+    for(var i=0;i<list.length;i++){ list[i].classList.remove("on"); }
+    $(id).classList.add("on");
+    window.scrollTo(0,0);
+  }
+  function label(){ return TEAMS[state.team].name + " " + state.group + "조"; }
+
+  /* ---------- 1. 팀 선택 ---------- */
+  var teamBtns = document.querySelectorAll(".team-btn");
+  for(var i=0;i<teamBtns.length;i++){
+    teamBtns[i].addEventListener("click", function(){
+      state.team = this.getAttribute("data-team");
+      var t = TEAMS[state.team];
+      document.documentElement.style.setProperty("--team", t.color);
+      document.documentElement.style.setProperty("--team-soft", t.soft);
+      $("g-team").textContent = t.name;
+      $("err-group").textContent = "";
+      $("in-group").value = "";
+      show("s-group");
+      $("in-group").focus();
+    });
+  }
+
+  /* ---------- 2. 조 입력 ---------- */
+  function submitGroup(){
+    var v = $("in-group").value.trim();
+    if(!v){ $("err-group").textContent = "조 이름을 입력해 주세요."; return; }
+    state.group = v;
+    $("badge").textContent = label();
+    $("badge").classList.add("on");
+    $("setup-title").textContent = label() + " 셋팅 완료";
+    show("s-setup");
+  }
+  $("btn-group").addEventListener("click", submitGroup);
+  $("in-group").addEventListener("keydown", function(e){ if(e.key === "Enter"){ submitGroup(); } });
+  $("btn-back-team").addEventListener("click", function(){
+    $("badge").classList.remove("on");
+    show("s-team");
+  });
+
+  /* ---------- 3. 칩 확인 ---------- */
+  $("btn-confirm25").addEventListener("click", function(){ goReady(); });
+
+  /* ---------- 4. 라운드 시작 대기 ---------- */
+  function goReady(){
+    $("ready-left").textContent = state.chips;
+    $("ready-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
+    $("ready-title").textContent = state.round + "라운드";
+    $("ready-msg").textContent = state.round === 1
+      ? "준비가 되었다면 1라운드 시작을 눌러 주세요."
+      : state.round + "라운드 시작을 눌러 주세요.";
+    $("btn-start-round").textContent = state.round + "라운드 시작";
+    show("s-ready");
+  }
+  $("btn-start-round").addEventListener("click", function(){ goBet(); });
+
+  /* ---------- 5. 배팅 입력 ---------- */
+  function goBet(){
+    $("bet-left").textContent = state.chips;
+    $("bet-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
+    $("bet-title").textContent = state.round + "라운드 배팅할 칩을 입력하세요.";
+    $("bet-guide").textContent = "최대 " + state.chips + "개까지 배팅할 수 있습니다.";
+    $("in-bet").max = state.chips;
+    $("err-bet").textContent = "";
+    show("s-bet");
+    $("in-bet").focus();
+  }
+  function submitBet(){
+    var raw = $("in-bet").value.trim();
+    var err = $("err-bet");
+    if(raw === ""){ err.textContent = "배팅할 칩의 갯수를 입력해 주세요."; return; }
+    var n = Number(raw);
+    if(!isFinite(n) || Math.floor(n) !== n){ err.textContent = "정수로 입력해 주세요."; return; }
+    if(n < 0){ err.textContent = "0개 미만은 입력할 수 없습니다."; return; }
+    if(n > state.chips){
+      err.textContent = "칩의 갯수는 " + state.chips + "개를 넘을 수 없습니다.";
+      return;
+    }
+    err.textContent = "";
+    state.bet = n;
+    goConfirm();
+  }
+  $("btn-bet-next").addEventListener("click", submitBet);
+  $("in-bet").addEventListener("keydown", function(e){ if(e.key === "Enter"){ submitBet(); } });
+
+  /* ---------- 6. 확인 ---------- */
+  function goConfirm(){
+    var left = state.chips - state.bet;
+    $("confirm-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
+    $("confirm-ask").innerHTML =
+      '남은 칩의 갯수는 <span class="big">' + left + '개</span> 입니다.<br>칩을 배팅하시겠습니까?';
+    $("confirm-bet").textContent = state.bet;
+    $("confirm-left").textContent = left;
+    show("s-confirm");
+  }
+  $("btn-no").addEventListener("click", function(){
+    $("in-bet").value = state.bet;
+    goBet();
+    $("in-bet").select();
+  });
+  $("btn-yes").addEventListener("click", function(){
+    state.chips -= state.bet;
+    state.history.push({ round: state.round, bet: state.bet, left: state.chips });
+    goResult();
+  });
+
+  /* ---------- 7. 결과 ---------- */
+  function goResult(){
+    $("result-step").textContent = "ROUND " + state.round + " / " + TOTAL_ROUNDS;
+    $("result-msg").textContent = state.bet + "개의 칩을 배팅하였습니다.";
+    $("result-left").textContent = state.chips;
+    $("btn-result-next").textContent = state.round < TOTAL_ROUNDS
+      ? (state.round + 1) + "라운드로 이동"
+      : "최종 결과 보기";
+    show("s-result");
+  }
+  $("btn-result-next").addEventListener("click", function(){
+    if(state.round < TOTAL_ROUNDS){
+      state.round += 1;
+      $("in-bet").value = "";
+      goReady();
+    } else {
+      goFinal();
+    }
+  });
+
+  /* ---------- 8. 최종 ---------- */
+  function goFinal(){
+    $("final-title").textContent = label();
+    $("final-left").textContent = state.chips;
+    var body = $("final-body"), total = 0, html = "";
+    for(var i=0;i<state.history.length;i++){
+      var h = state.history[i];
+      total += h.bet;
+      html += "<tr><td>" + h.round + "라운드</td><td>" + h.bet + "개</td><td>" + h.left + "개</td></tr>";
+    }
+    body.innerHTML = html;
+    $("final-total").textContent = total + "개";
+    $("final-rest").textContent = state.chips + "개";
+    show("s-final");
+  }
+
+  /* ---------- 재시작 ---------- */
+  $("btn-restart").addEventListener("click", function(){
+    state = { team:null, group:"", chips:TOTAL_CHIPS, round:1, bet:0, history:[] };
+    document.documentElement.style.setProperty("--team", "#6c7cff");
+    document.documentElement.style.setProperty("--team-soft", "rgba(108,124,255,.15)");
+    $("badge").classList.remove("on");
+    $("in-group").value = "";
+    $("in-bet").value = "";
+    show("s-team");
+  });
+})();
+</script>
+</body>
+</html>
