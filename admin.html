@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>칩의 딜레마 · 결과 취합</title>
+<style>
+  :root{
+    --bg:#0f1220; --card:#191d33; --card2:#212642; --line:#2e3455;
+    --txt:#f2f4ff; --sub:#9aa3c7; --dim:#6f78a0; --accent:#6c7cff;
+    --red:#e2444b; --yellow:#f0b429; --blue:#2f7ae5;
+    --good:#40c48c; --warn:#f0b429; --bad:#e2444b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:26px 18px 60px}
+  header{margin-bottom:22px}
+  h1{margin:0;font-size:22px;font-weight:800;letter-spacing:1px}
+  .lead{margin-top:7px;font-size:13px;color:var(--sub);line-height:1.7}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+  h2{margin:0 0 4px;font-size:16px;font-weight:800}
+  .h-sub{font-size:12px;color:var(--sub);margin-bottom:16px;line-height:1.6}
+  p{margin:0 0 10px;font-size:13px;line-height:1.7;color:#d9deff}
+  .muted{color:var(--sub);font-size:12px}
+
+  /* 탭 */
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{padding:10px 16px;border-radius:999px;border:2px solid var(--line);background:transparent;
+    color:var(--sub);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .pane{display:none}
+  .pane.on{display:block}
+
+  textarea,input,select{font-family:inherit;background:var(--card2);color:var(--txt);
+    border:2px solid var(--line);border-radius:12px;outline:none}
+  textarea{width:100%;min-height:150px;padding:14px;font-size:13px;line-height:1.8;resize:vertical}
+  textarea:focus,input:focus,select:focus{border-color:var(--accent)}
+  input,select{padding:12px 14px;font-size:15px;font-weight:700}
+  input[type=number]{text-align:center}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield}
+  .btn{padding:13px 20px;border:none;border-radius:12px;background:var(--accent);color:#fff;
+    font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+  .btn.ghost{background:transparent;border:2px solid var(--line);color:var(--sub)}
+  .btn.danger{background:transparent;border:2px solid rgba(226,68,75,.5);color:#ff8a8a}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .row.end{justify-content:flex-end}
+
+  .manual{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:10px;margin-bottom:14px}
+  .fld{display:flex;flex-direction:column;gap:6px}
+  .fld label{font-size:11px;color:var(--sub);font-weight:800;text-align:center}
+  .fld input,.fld select{width:100%}
+
+  .log{margin-top:14px;font-size:12.5px;line-height:1.8;font-weight:700}
+  .log .ok{color:var(--good)}
+  .log .bad{color:#ff9a9a}
+  .log .warn{color:var(--warn)}
+
+  /* 스탯 타일 */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px 18px}
+  .tile .k{font-size:11.5px;color:var(--sub);font-weight:800;letter-spacing:.3px}
+  .tile .v{font-size:30px;font-weight:900;margin-top:6px;line-height:1.1}
+  .tile .u{font-size:12px;color:var(--dim);font-weight:700;margin-left:3px}
+
+  /* 범례 */
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .lg{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;color:var(--sub)}
+  .lg i{width:11px;height:11px;border-radius:3px;display:block}
+
+  /* 가로 막대 (팀 합계) */
+  .hbars{display:flex;flex-direction:column;gap:14px}
+  .hb-row .hb-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .hb-name{font-size:13.5px;font-weight:800}
+  .hb-val{font-size:13.5px;font-weight:900}
+  .hb-val small{color:var(--dim);font-weight:700;font-size:11.5px;margin-left:5px}
+  .hb-track{height:16px;background:var(--card2);border-radius:8px;overflow:hidden;display:flex}
+  .hb-fill{height:100%;border-radius:8px;transition:width .3s ease}
+  .hb-rest{height:100%;background:var(--card2)}
+
+  /* 그룹 세로 막대 (라운드별) */
+  .rchart{display:flex;gap:10px;align-items:flex-end;height:190px;padding-top:8px}
+  .rgroup{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%}
+  .rbars{flex:1;display:flex;gap:2px;align-items:flex-end;width:100%;justify-content:center;
+    border-bottom:1px solid var(--line)}
+  .rbar{flex:1;max-width:26px;border-radius:4px 4px 0 0;min-height:2px;position:relative;cursor:default}
+  .rbar:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+    background:#0b0e1a;color:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 10px;
+    font-size:11.5px;font-weight:800;white-space:nowrap;margin-bottom:7px;z-index:5}
+  .rlabel{font-size:11.5px;color:var(--sub);font-weight:800}
+
+  /* 표 */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+  th,td{padding:11px 8px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{color:var(--sub);font-size:11.5px;font-weight:800;cursor:pointer;user-select:none}
+  th:hover{color:var(--txt)}
+  th.static{cursor:default}
+  th.static:hover{color:var(--sub)}
+  td{font-weight:700}
+  td.name{text-align:left}
+  tbody tr:hover{background:rgba(255,255,255,.03)}
+  .tdot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
+  .del{background:none;border:none;color:#ff8a8a;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit}
+  .bad-row td{background:rgba(226,68,75,.07)}
+  tfoot td{font-weight:900;color:var(--txt);border-bottom:none;border-top:2px solid var(--line)}
+
+  .empty{text-align:center;padding:44px 20px;color:var(--sub);font-size:13.5px;font-weight:700;line-height:1.9}
+  .flag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10.5px;font-weight:800;
+    background:rgba(226,68,75,.16);color:#ff9a9a;margin-left:6px}
+  .callout{border-radius:12px;padding:14px 16px;font-size:13px;font-weight:700;line-height:1.75;margin-bottom:14px}
+  .callout.info{background:rgba(108,124,255,.1);border:1px solid rgba(108,124,255,.35);color:#b9c1ff}
+  .callout.warn{background:rgba(240,180,41,.09);border:1px solid rgba(240,180,41,.32);color:#f5cd6e}
+  .win{display:flex;flex-direction:column;gap:12px}
+  .win-b{background:var(--card2);border-radius:14px;padding:16px 18px}
+  .win-b .k{font-size:11.5px;color:var(--sub);font-weight:800}
+  .win-b .v{font-size:21px;font-weight:900;margin-top:6px}
+  .win-b .d{font-size:12px;color:var(--dim);font-weight:700;margin-top:5px}
+  footer{margin-top:26px;text-align:center;font-size:12px;color:var(--dim);font-weight:700;line-height:1.9}
+  footer a{color:var(--sub)}
+  code{background:var(--card2);padding:2px 6px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>칩의 딜레마 · 결과 취합</h1>
+    <div class="lead">
+      각 조가 앱에서 <b>결과 복사</b>한 텍스트를 붙여넣거나, <b>CSV 내보내기</b> 파일을 올리면
+      조별·팀별 합계를 계산합니다. 취합한 내용은 이 기기에만 저장됩니다.
+    </div>
+  </header>
+
+  <!-- 입력 -->
+  <div class="card">
+    <h2>결과 입력</h2>
+    <div class="h-sub">같은 팀·같은 조가 다시 들어오면 최신 값으로 덮어씁니다.</div>
+
+    <div class="tabs">
+      <button class="tab on" data-pane="p-paste">붙여넣기</button>
+      <button class="tab" data-pane="p-csv">CSV 파일</button>
+      <button class="tab" data-pane="p-manual">직접 입력</button>
+    </div>
+
+    <div class="pane on" id="p-paste">
+      <p class="muted" style="margin-bottom:10px">
+        여러 줄을 한 번에 붙여넣을 수 있습니다. 인식 형식:<br>
+        <code>레드팀 1조 | 배팅 5/3/3/3/3 | 총 배팅 17개 | 잔여 8개</code><br>
+        <code>레드팀,1,5,3,3,3,3,17,8</code> · <code>레드 1 5 3 3 3 3</code>
+      </p>
+      <textarea id="ta" placeholder="각 조에게 받은 결과를 여기에 붙여넣으세요"></textarea>
+      <div class="row end" style="margin-top:12px">
+        <button class="btn ghost" id="btn-ta-clear">지우기</button>
+        <button class="btn" id="btn-ta-add">추가하기</button>
+      </div>
+    </div>
+
+    <div class="pane" id="p-csv">
+      <p class="muted" style="margin-bottom:12px">
+        조별 앱의 <b>CSV 내보내기</b>로 받은 <code>chip-dilemma-records-*.csv</code> 파일을 선택하세요.
+        여러 파일을 한 번에 선택할 수 있습니다.
+      </p>
+      <input type="file" id="csv-file" accept=".csv,text/csv" multiple
+        style="width:100%;padding:22px;border-style:dashed;font-size:13px;font-weight:700">
+    </div>
+
+    <div class="pane" id="p-manual">
+      <div class="manual">
+        <div class="fld"><label>팀</label>
+          <select id="m-team"><option value="red">레드팀</option><option value="yellow">옐로팀</option><option value="blue">블루팀</option></select>
+        </div>
+        <div class="fld"><label>조</label><input type="text" id="m-group" placeholder="1" maxlength="12"></div>
+        <div class="fld"><label>1R</label><input type="number" class="m-bet" min="0" max="25" placeholder="0"></div>
+        <div class="fld"><label>2R</label><input type="number" class="m-bet" min="0" max="25" placeholder="0"></div>
+        <div class="fld"><label>3R</label><input type="number" class="m-bet" min="0" max="25" placeholder="0"></div>
+        <div class="fld"><label>4R</label><input type="number" class="m-bet" min="0" max="25" placeholder="0"></div>
+        <div class="fld"><label>5R</label><input type="number" class="m-bet" min="0" max="25" placeholder="0"></div>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <span class="muted" id="m-live">총 배팅 0개 · 잔여 25개</span>
+        <button class="btn" id="btn-m-add">추가하기</button>
+      </div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <div id="dash"></div>
+
+  <div class="card" id="io-card" style="display:none">
+    <div class="row" style="justify-content:space-between">
+      <button class="btn ghost" id="btn-export">취합 결과 CSV 내보내기</button>
+      <button class="btn danger" id="btn-clear-all">전체 삭제</button>
+    </div>
+  </div>
+
+  <footer>
+    조별 입력 앱: <a href="./" target="_blank" rel="noopener">chip-dilemma.vercel.app</a><br>
+    취합 데이터는 이 브라우저(localStorage)에만 저장됩니다.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TOTAL_CHIPS = 25, ROUNDS = 5;
+  var KEY = "chipDilemma.admin.v1";
+  var TEAMS = {
+    red:    {name:"레드팀", color:"#e2444b"},
+    yellow: {name:"옐로팀", color:"#f0b429"},
+    blue:   {name:"블루팀", color:"#2f7ae5"}
+  };
+  var ORDER = ["red","yellow","blue"];
+  var sortKey = "team", sortDir = 1;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function sum(a){ var n=0; for(var i=0;i<a.length;i++){ n+=a[i]; } return n; }
+
+  /* ---------- 저장 ---------- */
+  var LS_OK = (function(){
+    try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }
+    catch(e){ return false; }
+  })();
+  var mem = [];
+  function load(){
+    if(!LS_OK){ return mem; }
+    try{
+      var v = JSON.parse(localStorage.getItem(KEY) || "[]");
+      return Object.prototype.toString.call(v) === "[object Array]" ? v : [];
+    }catch(e){ return []; }
+  }
+  function save(list){
+    mem = list;
+    if(!LS_OK){ return; }
+    try{ localStorage.setItem(KEY, JSON.stringify(list)); }catch(e){}
+  }
+
+  /* ---------- 파서 ---------- */
+  function detectTeam(s){
+    if(/레드|빨강|빨간|red/i.test(s)) return "red";
+    if(/옐로|노랑|노란|엘로|yellow/i.test(s)) return "yellow";
+    if(/블루|파랑|파란|blue/i.test(s)) return "blue";
+    return null;
+  }
+  function nums(s){
+    var m = String(s).match(/\d+/g);
+    if(!m){ return []; }
+    var out = [];
+    for(var i=0;i<m.length;i++){ out.push(parseInt(m[i],10)); }
+    return out;
+  }
+  function mkRec(team, group, bets){
+    var t = sum(bets);
+    return {
+      team: team, group: String(group), bets: bets,
+      totalBet: t, left: TOTAL_CHIPS - t,
+      valid: t <= TOTAL_CHIPS, addedAt: Date.now()
+    };
+  }
+  // 한 줄 -> {rec} 또는 {error}
+  function parseLine(line){
+    var raw = line.trim();
+    if(!raw){ return null; }
+    if(/^팀\s*[,\t]/.test(raw)){ return null; }               // CSV 헤더
+    if(/^(team|팀)$/i.test(raw)){ return null; }
+
+    var team = detectTeam(raw);
+    if(!team){ return { error:"팀(레드/옐로/블루)을 찾을 수 없습니다" }; }
+
+    var group = null, bets = null;
+
+    if(raw.indexOf("|") >= 0){
+      // 복사 형식: 레드팀 1조 | 배팅 5/3/3/3/3 | ...
+      var gm = raw.split("|")[0].match(/([^\s|]+)\s*조/);
+      if(gm){ group = gm[1]; }
+      var bm = raw.match(/배팅\s*([0-9]+(?:\s*[\/,\s]\s*[0-9]+)*)/);
+      if(bm){ bets = nums(bm[1]); }
+    } else if(raw.split(/[,\t]/).length >= 7){
+      // CSV: 팀,조,1R..5R,총배팅,잔여칩,시각
+      var f = raw.split(/[,\t]/);
+      group = f[1].trim().replace(/조$/,"");
+      bets = [];
+      for(var i=2;i<7;i++){
+        var v = parseInt(String(f[i]).trim(),10);
+        if(isNaN(v)){ bets = null; break; }
+        bets.push(v);
+      }
+    } else {
+      // 느슨한 형식
+      var gm2 = raw.match(/([^\s]+)\s*조/);
+      var n = nums(raw);
+      if(gm2 && nums(gm2[1]).length === 0){          // 조 이름이 숫자가 아님
+        group = gm2[1];
+        bets = n.length >= ROUNDS ? n.slice(0, ROUNDS) : null;
+      } else if(n.length === ROUNDS + 1){
+        group = String(n[0]);
+        bets = n.slice(1, ROUNDS+1);
+      } else if(gm2){
+        group = gm2[1].replace(/조$/,"");
+        var rest = nums(raw.slice(raw.indexOf(gm2[0]) + gm2[0].length));
+        bets = rest.length >= ROUNDS ? rest.slice(0, ROUNDS) : null;
+      }
+    }
+
+    if(group === null || group === ""){ return { error:"조 이름을 찾을 수 없습니다" }; }
+    if(!bets || bets.length !== ROUNDS){ return { error:"라운드별 배팅 " + ROUNDS + "개를 찾을 수 없습니다" }; }
+    for(var k=0;k<bets.length;k++){
+      if(bets[k] < 0 || bets[k] > TOTAL_CHIPS){ return { error:(k+1) + "라운드 배팅값이 범위를 벗어납니다" }; }
+    }
+    return { rec: mkRec(team, group, bets) };
+  }
+
+  function ingest(text){
+    var lines = String(text).split(/\r?\n/);
+    var list = load(), added = 0, updated = 0, over = 0, fails = [];
+    for(var i=0;i<lines.length;i++){
+      var r = parseLine(lines[i]);
+      if(r === null){ continue; }
+      if(r.error){ fails.push({ line: lines[i].trim(), why: r.error }); continue; }
+      var rec = r.rec, found = -1;
+      for(var j=0;j<list.length;j++){
+        if(list[j].team === rec.team && String(list[j].group) === rec.group){ found = j; break; }
+      }
+      if(found >= 0){ list[found] = rec; updated++; } else { list.push(rec); added++; }
+      if(!rec.valid){ over++; }
+    }
+    save(list);
+    report(added, updated, over, fails);
+    render();
+  }
+
+  function report(added, updated, over, fails){
+    var h = [];
+    if(added){ h.push('<div class="ok">✅ ' + added + '건 추가</div>'); }
+    if(updated){ h.push('<div class="ok">🔁 ' + updated + '건 갱신(덮어쓰기)</div>'); }
+    if(over){ h.push('<div class="warn">⚠️ ' + over + '건은 총 배팅이 25개를 넘습니다. 표에서 확인하세요.</div>'); }
+    for(var i=0;i<fails.length;i++){
+      h.push('<div class="bad">❌ ' + esc(fails[i].why) + ' — <span class="muted">' + esc(fails[i].line.slice(0,60)) + '</span></div>');
+    }
+    if(!h.length){ h.push('<div class="warn">인식된 결과가 없습니다.</div>'); }
+    $("log").innerHTML = h.join("");
+  }
+
+  /* ---------- 입력 UI ---------- */
+  var tabs = document.querySelectorAll(".tab");
+  for(var t=0;t<tabs.length;t++){
+    tabs[t].addEventListener("click", function(){
+      for(var q=0;q<tabs.length;q++){
+        tabs[q].classList.remove("on");
+        $(tabs[q].getAttribute("data-pane")).classList.remove("on");
+      }
+      this.classList.add("on");
+      $(this.getAttribute("data-pane")).classList.add("on");
+    });
+  }
+  $("btn-ta-add").addEventListener("click", function(){ ingest($("ta").value); });
+  $("btn-ta-clear").addEventListener("click", function(){ $("ta").value = ""; $("log").innerHTML = ""; });
+
+  $("csv-file").addEventListener("change", function(){
+    var files = this.files;
+    if(!files || !files.length){ return; }
+    var texts = [], done = 0;
+    for(var i=0;i<files.length;i++){
+      (function(idx){
+        var fr = new FileReader();
+        fr.onload = function(){
+          texts[idx] = String(fr.result).replace(/^﻿/, "");
+          if(++done === files.length){ ingest(texts.join("\n")); }
+        };
+        fr.onerror = function(){
+          texts[idx] = "";
+          if(++done === files.length){ ingest(texts.join("\n")); }
+        };
+        fr.readAsText(files[idx], "utf-8");
+      })(i);
+    }
+    this.value = "";
+  });
+
+  var mBets = document.querySelectorAll(".m-bet");
+  function mLive(){
+    var b = [], n = 0;
+    for(var i=0;i<mBets.length;i++){
+      var v = parseInt(mBets[i].value, 10);
+      b.push(isNaN(v) ? 0 : v);
+    }
+    n = sum(b);
+    $("m-live").textContent = "총 배팅 " + n + "개 · 잔여 " + (TOTAL_CHIPS - n) + "개";
+    $("m-live").style.color = n > TOTAL_CHIPS ? "#ff9a9a" : "";
+    return b;
+  }
+  for(var mb=0; mb<mBets.length; mb++){ mBets[mb].addEventListener("input", mLive); }
+  $("btn-m-add").addEventListener("click", function(){
+    var g = $("m-group").value.trim();
+    if(!g){ $("log").innerHTML = '<div class="bad">❌ 조 이름을 입력하세요.</div>'; return; }
+    var bets = mLive();
+    var line = TEAMS[$("m-team").value].name + " " + g + "조 | 배팅 " + bets.join("/");
+    ingest(line);
+    $("m-group").value = "";
+    for(var i=0;i<mBets.length;i++){ mBets[i].value = ""; }
+    mLive();
+  });
+
+  /* ---------- 집계 ---------- */
+  function stats(){
+    var list = load();
+    var teams = {}, grand = { count:0, bet:0, left:0 };
+    for(var o=0;o<ORDER.length;o++){
+      teams[ORDER[o]] = { key:ORDER[o], count:0, bet:0, left:0, rounds:[0,0,0,0,0], groups:[] };
+    }
+    for(var i=0;i<list.length;i++){
+      var r = list[i], T = teams[r.team];
+      if(!T){ continue; }
+      T.count++; T.bet += r.totalBet; T.left += r.left; T.groups.push(r);
+      for(var k=0;k<ROUNDS;k++){ T.rounds[k] += (r.bets[k] || 0); }
+      grand.count++; grand.bet += r.totalBet; grand.left += r.left;
+    }
+    return { list:list, teams:teams, grand:grand };
+  }
+
+  /* ---------- 렌더 ---------- */
+  function render(){
+    var s = stats(), d = $("dash");
+    $("io-card").style.display = s.list.length ? "block" : "none";
+    if(!s.list.length){
+      d.innerHTML = '<div class="card"><div class="empty">아직 취합된 결과가 없습니다.<br>' +
+        '위에서 각 조의 결과를 붙여넣거나 CSV를 올려 주세요.</div></div>';
+      return;
+    }
+
+    var html = "";
+
+    /* 스탯 타일 */
+    html += '<div class="tiles">' +
+      tile("취합된 조", s.grand.count, "개 조") +
+      tile("전체 배팅", s.grand.bet, "개") +
+      tile("전체 잔여", s.grand.left, "개") +
+      tile("조 평균 잔여", s.grand.count ? (s.grand.left / s.grand.count).toFixed(1) : "0", "개") +
+      '</div>';
+
+    /* 팀 합계 */
+    var maxTeamBet = 1;
+    for(var o=0;o<ORDER.length;o++){ maxTeamBet = Math.max(maxTeamBet, teamOf(s,o).bet); }
+
+    html += '<div class="card"><h2>팀별 합계</h2>' +
+      '<div class="h-sub">막대 길이는 팀 총 배팅. 각 팀의 최대 가능 배팅은 조 수 × 25개입니다.</div>' +
+      invalidWarn(s);
+    html += '<div class="hbars">';
+    for(var a=0;a<ORDER.length;a++){
+      var T = teamOf(s,a), meta = TEAMS[T.key];
+      var cap = T.count * TOTAL_CHIPS;
+      var w = maxTeamBet ? (T.bet / maxTeamBet * 100) : 0;
+      html +=
+        '<div class="hb-row"><div class="hb-top">' +
+        '<span class="hb-name"><span class="tdot" style="background:' + meta.color + '"></span>' + meta.name +
+        ' <span class="muted">· ' + T.count + '개 조</span></span>' +
+        '<span class="hb-val">배팅 ' + T.bet + '개<small>잔여 ' + T.left + '개' +
+        (cap ? ' · 소진율 ' + Math.round(T.bet / cap * 100) + '%' : '') + '</small></span></div>' +
+        '<div class="hb-track"><div class="hb-fill" style="width:' + w + '%;background:' + meta.color + '"></div></div>' +
+        '</div>';
+    }
+    html += '</div></div>';
+
+    /* 라운드별 */
+    var maxRound = 1;
+    for(var b=0;b<ORDER.length;b++){
+      var TR = teamOf(s,b).rounds;
+      for(var k2=0;k2<ROUNDS;k2++){ maxRound = Math.max(maxRound, TR[k2]); }
+    }
+    html += '<div class="card"><h2>라운드별 팀 배팅</h2>' +
+      '<div class="h-sub">라운드마다 각 팀이 배팅한 칩의 합계. 막대에 마우스를 올리면 값이 보입니다. 정확한 값은 아래 표에 있습니다.</div>' +
+      legend() + '<div class="rchart">';
+    for(var r=0;r<ROUNDS;r++){
+      html += '<div class="rgroup"><div class="rbars">';
+      for(var c=0;c<ORDER.length;c++){
+        var Tc = teamOf(s,c), v = Tc.rounds[r];
+        var h = maxRound ? Math.max(2, v / maxRound * 100) : 2;
+        html += '<div class="rbar" style="height:' + h + '%;background:' + TEAMS[Tc.key].color + '" ' +
+                'data-tip="' + TEAMS[Tc.key].name + ' ' + (r+1) + 'R · ' + v + '개"></div>';
+      }
+      html += '</div><div class="rlabel">' + (r+1) + 'R</div></div>';
+    }
+    html += '</div></div>';
+
+    /* 라운드 합계 표 */
+    html += '<div class="card"><h2>라운드별 합계 (표)</h2>' +
+      '<div class="h-sub">위 그래프와 같은 값입니다.</div><div class="tbl-wrap"><table style="min-width:0">' +
+      '<thead><tr><th class="static" style="text-align:left">팀</th>';
+    for(var rh=1; rh<=ROUNDS; rh++){ html += '<th class="static">' + rh + 'R</th>'; }
+    html += '<th class="static">합계</th></tr></thead><tbody>';
+    for(var tr=0; tr<ORDER.length; tr++){
+      var Tt = teamOf(s,tr);
+      html += '<tr><td class="name"><span class="tdot" style="background:' + TEAMS[Tt.key].color + '"></span>' +
+              TEAMS[Tt.key].name + '</td>';
+      for(var rc=0; rc<ROUNDS; rc++){ html += '<td>' + Tt.rounds[rc] + '</td>'; }
+      html += '<td style="font-weight:900">' + Tt.bet + '</td></tr>';
+    }
+    html += '</tbody></table></div></div>';
+
+    /* 조별 표 */
+    html += '<div class="card"><h2>조별 결과</h2>' +
+      '<div class="h-sub">머리글을 눌러 정렬합니다. 현재 정렬: ' + sortLabel() + '</div>' +
+      '<div class="tbl-wrap"><table><thead><tr>' +
+      th("team","팀") + th("group","조") +
+      '<th class="static">1R</th><th class="static">2R</th><th class="static">3R</th>' +
+      '<th class="static">4R</th><th class="static">5R</th>' +
+      th("bet","총 배팅") + th("left","잔여 칩") + '<th class="static"></th></tr></thead><tbody>';
+    var rows = sorted(s.list);
+    for(var i2=0;i2<rows.length;i2++){
+      var R = rows[i2], m = TEAMS[R.team];
+      html += '<tr' + (R.valid ? '' : ' class="bad-row"') + '>' +
+        '<td class="name"><span class="tdot" style="background:' + m.color + '"></span>' + m.name + '</td>' +
+        '<td>' + esc(R.group) + '조' + (R.valid ? '' : '<span class="flag">합계 초과</span>') + '</td>';
+      for(var k3=0;k3<ROUNDS;k3++){ html += '<td>' + (R.bets[k3] || 0) + '</td>'; }
+      html += '<td style="font-weight:900">' + R.totalBet + '</td>' +
+              '<td style="font-weight:900">' + R.left + '</td>' +
+              '<td><button class="del" data-team="' + R.team + '" data-group="' + esc(R.group) + '">삭제</button></td></tr>';
+    }
+    html += '</tbody><tfoot><tr><td class="name">합계</td><td>' + s.grand.count + '개 조</td>';
+    for(var k4=0;k4<ROUNDS;k4++){
+      var rt = 0;
+      for(var c2=0;c2<ORDER.length;c2++){ rt += teamOf(s,c2).rounds[k4]; }
+      html += '<td>' + rt + '</td>';
+    }
+    html += '<td>' + s.grand.bet + '</td><td>' + s.grand.left + '</td><td></td></tr></tfoot></table></div></div>';
+
+    /* 판정 */
+    html += judge(s);
+
+    d.innerHTML = html;
+  }
+
+  function teamOf(s, i){ return s.teams[ORDER[i]]; }
+  function invalidOf(s){
+    var out = [];
+    for(var i=0;i<s.list.length;i++){ if(!s.list[i].valid){ out.push(s.list[i]); } }
+    return out;
+  }
+  function invalidWarn(s){
+    var bad = invalidOf(s);
+    if(!bad.length){ return ""; }
+    var names = bad.map(function(r){ return TEAMS[r.team].name + " " + esc(r.group) + "조(" + r.totalBet + "개)"; });
+    return '<div class="callout warn">⚠️ 총 배팅이 25개를 넘는 행이 ' + bad.length + '건 있습니다 — ' +
+      names.join(", ") + '. <b>아래 합계와 순위가 왜곡됩니다.</b> 조별 결과 표에서 값을 고치거나 삭제하세요.</div>';
+  }
+  function tile(k, v, u){
+    return '<div class="tile"><div class="k">' + k + '</div><div class="v">' + v +
+           '<span class="u">' + u + '</span></div></div>';
+  }
+  function legend(){
+    var h = '<div class="legend">';
+    for(var i=0;i<ORDER.length;i++){
+      h += '<span class="lg"><i style="background:' + TEAMS[ORDER[i]].color + '"></i>' + TEAMS[ORDER[i]].name + '</span>';
+    }
+    return h + '</div>';
+  }
+  function th(key, text){
+    var arrow = sortKey === key ? (sortDir > 0 ? " ▲" : " ▼") : "";
+    return '<th data-sort="' + key + '"' + (key === "team" ? ' style="text-align:left"' : '') + '>' + text + arrow + '</th>';
+  }
+  function sortLabel(){
+    var n = { team:"팀 순", group:"조 순", bet:"총 배팅", left:"잔여 칩" }[sortKey] || "팀 순";
+    return n + (sortDir > 0 ? " 오름차순" : " 내림차순");
+  }
+  function sorted(list){
+    return list.slice().sort(function(a,b){
+      var v = 0;
+      if(sortKey === "bet"){ v = a.totalBet - b.totalBet; }
+      else if(sortKey === "left"){ v = a.left - b.left; }
+      else if(sortKey === "group"){ v = cmpGroup(a,b); }
+      else { v = ORDER.indexOf(a.team) - ORDER.indexOf(b.team) || cmpGroup(a,b); }
+      if(v === 0){ v = ORDER.indexOf(a.team) - ORDER.indexOf(b.team) || cmpGroup(a,b); return v; }
+      return v * sortDir;
+    });
+  }
+  function cmpGroup(a,b){
+    var na = Number(a.group), nb = Number(b.group);
+    if(isFinite(na) && isFinite(nb) && na !== nb){ return na - nb; }
+    return a.group < b.group ? -1 : (a.group > b.group ? 1 : 0);
+  }
+
+  function judge(s){
+    var ranked = ORDER.map(function(k){ return s.teams[k]; })
+      .filter(function(T){ return T.count > 0; })
+      .sort(function(x,y){ return y.bet - x.bet; });
+    if(!ranked.length){ return ""; }
+
+    var top = ranked[0];
+    var tie = ranked.filter(function(T){ return T.bet === top.bet; });
+    var h = '<div class="card"><h2>결과 판정</h2>' +
+      '<div class="h-sub">아래 기준은 게임 안내문(“팀이 승리하려면 많이 배팅해야 한다”)에서 도출한 것입니다.</div>' +
+      invalidWarn(s) +
+      '<div class="callout warn">판정 기준은 <b>추측입니다.</b> ' +
+      '앱 안내문에는 “많이 배팅해야 팀이 승리한다”고만 되어 있고 정확한 승리 조건이 정의되어 있지 않습니다. ' +
+      '실제 운영 기준이 다르면 아래 판정은 무시하고 위의 합계 표를 사용하세요.</div><div class="win">';
+
+    if(tie.length > 1){
+      var names = tie.map(function(T){ return TEAMS[T.key].name; }).join(", ");
+      h += box("승리 팀 (총 배팅 최다)", names + " 동점", "총 배팅 " + top.bet + "개로 동률입니다. 별도 기준이 필요합니다.");
+    } else {
+      h += box("승리 팀 (총 배팅 최다)", TEAMS[top.key].name,
+               "총 배팅 " + top.bet + "개 · " + top.count + "개 조 · 조 평균 " +
+               (top.bet / top.count).toFixed(1) + "개");
+      var win = top.groups.slice().sort(function(x,y){ return y.left - x.left; });
+      var best = win[0];
+      var gTie = win.filter(function(g){ return g.left === best.left; });
+      if(gTie.length > 1){
+        h += box("우승 조 (승리 팀 내 잔여 최다)",
+                 gTie.map(function(g){ return esc(g.group) + "조"; }).join(", ") + " 동점",
+                 "잔여 " + best.left + "개로 동률입니다.");
+      } else {
+        h += box("우승 조 (승리 팀 내 잔여 최다)", TEAMS[top.key].name + " " + esc(best.group) + "조",
+                 "잔여 " + best.left + "개 · 총 배팅 " + best.totalBet + "개");
+      }
+    }
+
+    var allSorted = s.list.slice().sort(function(x,y){ return y.left - x.left; });
+    if(allSorted.length){
+      var a0 = allSorted[0];
+      h += box("전체 잔여 1위 (참고)", TEAMS[a0.team].name + " " + esc(a0.group) + "조",
+               "잔여 " + a0.left + "개. 소속 팀이 승리하지 못하면 우승이 아닙니다.");
+    }
+    return h + '</div></div>';
+  }
+  function box(k, v, d){
+    return '<div class="win-b"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + d + '</div></div>';
+  }
+
+  /* ---------- 표 상호작용 ---------- */
+  $("dash").addEventListener("click", function(e){
+    var t = e.target;
+    var delBtn = t.closest ? t.closest(".del") : null;
+    if(delBtn){
+      var team = delBtn.getAttribute("data-team"), group = delBtn.getAttribute("data-group");
+      if(!window.confirm(TEAMS[team].name + " " + group + "조 기록을 삭제할까요?")){ return; }
+      var list = load(), out = [];
+      for(var i=0;i<list.length;i++){
+        if(!(list[i].team === team && String(list[i].group) === group)){ out.push(list[i]); }
+      }
+      save(out); render();
+      return;
+    }
+    var thEl = t.closest ? t.closest("th[data-sort]") : null;
+    if(thEl){
+      var k = thEl.getAttribute("data-sort");
+      if(sortKey === k){ sortDir = -sortDir; }
+      else { sortKey = k; sortDir = (k === "bet" || k === "left") ? -1 : 1; }
+      render();
+    }
+  });
+
+  /* ---------- 내보내기 / 삭제 ---------- */
+  function csvCell(v){
+    var s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }
+  $("btn-export").addEventListener("click", function(){
+    var s = stats();
+    var rows = [["팀","조","1R","2R","3R","4R","5R","총배팅","잔여칩"]];
+    var list = sorted(s.list);
+    for(var i=0;i<list.length;i++){
+      var r = list[i], row = [TEAMS[r.team].name, r.group];
+      for(var k=0;k<ROUNDS;k++){ row.push(r.bets[k] || 0); }
+      row.push(r.totalBet, r.left);
+      rows.push(row);
+    }
+    rows.push([]);
+    rows.push(["팀 합계","조 수","1R","2R","3R","4R","5R","총배팅","잔여칩"]);
+    for(var o=0;o<ORDER.length;o++){
+      var T = s.teams[ORDER[o]];
+      if(!T.count){ continue; }
+      rows.push([TEAMS[T.key].name, T.count].concat(T.rounds).concat([T.bet, T.left]));
+    }
+    var csv = "";
+    for(var a=0;a<rows.length;a++){
+      var line = [];
+      for(var b=0;b<rows[a].length;b++){ line.push(csvCell(rows[a][b])); }
+      csv += line.join(",") + "\r\n";
+    }
+    var blob = new Blob(["﻿" + csv], {type:"text/csv;charset=utf-8;"});
+    var url = URL.createObjectURL(blob);
+    var d = new Date();
+    function p2(n){ return (n<10?"0":"") + n; }
+    var el = document.createElement("a");
+    el.href = url;
+    el.download = "chip-dilemma-summary-" + d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + ".csv";
+    document.body.appendChild(el); el.click(); document.body.removeChild(el);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  });
+  $("btn-clear-all").addEventListener("click", function(){
+    if(!load().length){ return; }
+    if(!window.confirm("취합된 모든 결과를 삭제할까요? 되돌릴 수 없습니다.")){ return; }
+    save([]); $("log").innerHTML = ""; render();
+  });
+
+  /* ---------- 초기화 ---------- */
+  if(!LS_OK){
+    $("log").innerHTML = '<div class="warn">⚠️ 이 브라우저에서는 저장이 되지 않습니다. 새로고침하면 취합 내용이 사라집니다.</div>';
+  }
+  mLive();
+  render();
+})();
+</script>
+</body>
+</html>
