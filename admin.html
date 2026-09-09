@@ -91,6 +91,8 @@
     background:#0b0e1a;color:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 10px;
     font-size:11.5px;font-weight:800;white-space:nowrap;margin-bottom:7px;z-index:5}
   .rlabel{font-size:11.5px;color:var(--sub);font-weight:800}
+  .rnone{align-self:center;margin:auto 0 8px;font-size:11px;color:var(--dim);font-weight:800;
+    border:1px dashed var(--line);border-radius:8px;padding:5px 8px;white-space:nowrap}
 
   /* 표 */
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -261,7 +263,7 @@
   function mkRec(team, group, bets){
     var t = sum(bets);
     return {
-      team: team, group: String(group), bets: bets,
+      team: team, group: String(group), bets: bets, played: bets.length,
       totalBet: t, left: TOTAL_CHIPS - t,
       valid: t <= TOTAL_CHIPS, addedAt: Date.now()
     };
@@ -285,13 +287,15 @@
       var bm = raw.match(/배팅\s*([0-9]+(?:\s*[\/,\s]\s*[0-9]+)*)/);
       if(bm){ bets = nums(bm[1]); }
     } else if(raw.split(/[,\t]/).length >= 7){
-      // CSV: 팀,조,1R..5R,총배팅,잔여칩,시각
+      // CSV: 팀,조,1R..5R,총배팅,잔여칩,시각 (조기 종료 시 뒤쪽 칸은 비어 있음)
       var f = raw.split(/[,\t]/);
       group = f[1].trim().replace(/조$/,"");
       bets = [];
-      for(var i=2;i<7;i++){
-        var v = parseInt(String(f[i]).trim(),10);
-        if(isNaN(v)){ bets = null; break; }
+      for(var i=2;i<2+ROUNDS;i++){
+        var cell = String(f[i] === undefined ? "" : f[i]).trim();
+        if(cell === ""){ break; }                   // 미진행 라운드에서 중단
+        var v = parseInt(cell,10);
+        if(isNaN(v)){ break; }
         bets.push(v);
       }
     } else {
@@ -300,19 +304,19 @@
       var n = nums(raw);
       if(gm2 && nums(gm2[1]).length === 0){          // 조 이름이 숫자가 아님
         group = gm2[1];
-        bets = n.length >= ROUNDS ? n.slice(0, ROUNDS) : null;
-      } else if(n.length === ROUNDS + 1){
-        group = String(n[0]);
-        bets = n.slice(1, ROUNDS+1);
+        bets = n.slice(0, ROUNDS);
       } else if(gm2){
         group = gm2[1].replace(/조$/,"");
-        var rest = nums(raw.slice(raw.indexOf(gm2[0]) + gm2[0].length));
-        bets = rest.length >= ROUNDS ? rest.slice(0, ROUNDS) : null;
+        bets = nums(raw.slice(raw.indexOf(gm2[0]) + gm2[0].length)).slice(0, ROUNDS);
+      } else if(n.length >= 2){
+        group = String(n[0]);
+        bets = n.slice(1, ROUNDS+1);
       }
     }
 
     if(group === null || group === ""){ return { error:"조 이름을 찾을 수 없습니다" }; }
-    if(!bets || bets.length !== ROUNDS){ return { error:"라운드별 배팅 " + ROUNDS + "개를 찾을 수 없습니다" }; }
+    if(!bets || !bets.length){ return { error:"라운드별 배팅값을 찾을 수 없습니다" }; }
+    if(bets.length > ROUNDS){ bets = bets.slice(0, ROUNDS); }
     for(var k=0;k<bets.length;k++){
       if(bets[k] < 0 || bets[k] > TOTAL_CHIPS){ return { error:(k+1) + "라운드 배팅값이 범위를 벗어납니다" }; }
     }
@@ -415,13 +419,16 @@
     var list = load();
     var teams = {}, grand = { count:0, bet:0, left:0 };
     for(var o=0;o<ORDER.length;o++){
-      teams[ORDER[o]] = { key:ORDER[o], count:0, bet:0, left:0, rounds:[0,0,0,0,0], groups:[] };
+      teams[ORDER[o]] = { key:ORDER[o], count:0, bet:0, left:0,
+                          rounds:[0,0,0,0,0], played:[0,0,0,0,0], groups:[] };
     }
     for(var i=0;i<list.length;i++){
       var r = list[i], T = teams[r.team];
       if(!T){ continue; }
       T.count++; T.bet += r.totalBet; T.left += r.left; T.groups.push(r);
-      for(var k=0;k<ROUNDS;k++){ T.rounds[k] += (r.bets[k] || 0); }
+      for(var k=0;k<ROUNDS;k++){
+        if(typeof r.bets[k] === "number"){ T.rounds[k] += r.bets[k]; T.played[k]++; }
+      }
       grand.count++; grand.bet += r.totalBet; grand.left += r.left;
     }
     return { list:list, teams:teams, grand:grand };
@@ -452,7 +459,8 @@
     for(var o=0;o<ORDER.length;o++){ maxTeamBet = Math.max(maxTeamBet, teamOf(s,o).bet); }
 
     html += '<div class="card"><h2>팀별 합계</h2>' +
-      '<div class="h-sub">막대 길이는 팀 총 배팅. 각 팀의 최대 가능 배팅은 조 수 × 25개입니다.</div>' +
+      '<div class="h-sub">막대 길이는 팀 총 배팅(5라운드 누적). ' +
+      '<b>승패는 라운드마다 따로 가립니다</b> — 아래 라운드별 승패 표를 보세요.</div>' +
       invalidWarn(s);
     html += '<div class="hbars">';
     for(var a=0;a<ORDER.length;a++){
@@ -477,34 +485,30 @@
       for(var k2=0;k2<ROUNDS;k2++){ maxRound = Math.max(maxRound, TR[k2]); }
     }
     html += '<div class="card"><h2>라운드별 팀 배팅</h2>' +
-      '<div class="h-sub">라운드마다 각 팀이 배팅한 칩의 합계. 막대에 마우스를 올리면 값이 보입니다. 정확한 값은 아래 표에 있습니다.</div>' +
+      '<div class="h-sub">라운드마다 각 팀이 배팅한 칩의 합계. 이 합계가 가장 큰 팀이 그 라운드를 승리합니다. ' +
+      '막대에 마우스를 올리면 값이 보이고, 정확한 값과 승패는 아래 표에 있습니다.</div>' +
       legend() + '<div class="rchart">';
     for(var r=0;r<ROUNDS;r++){
+      var anyPlayed = false;
+      for(var pc=0;pc<ORDER.length;pc++){ if(teamOf(s,pc).played[r] > 0){ anyPlayed = true; } }
       html += '<div class="rgroup"><div class="rbars">';
-      for(var c=0;c<ORDER.length;c++){
-        var Tc = teamOf(s,c), v = Tc.rounds[r];
-        var h = maxRound ? Math.max(2, v / maxRound * 100) : 2;
-        html += '<div class="rbar" style="height:' + h + '%;background:' + TEAMS[Tc.key].color + '" ' +
-                'data-tip="' + TEAMS[Tc.key].name + ' ' + (r+1) + 'R · ' + v + '개"></div>';
+      if(!anyPlayed){
+        html += '<div class="rnone">미진행</div>';
+      } else {
+        for(var c=0;c<ORDER.length;c++){
+          var Tc = teamOf(s,c), v = Tc.rounds[r];
+          var h = maxRound ? Math.max(2, v / maxRound * 100) : 2;
+          html += '<div class="rbar" style="height:' + h + '%;background:' + TEAMS[Tc.key].color + '" ' +
+                  'data-tip="' + TEAMS[Tc.key].name + ' ' + (r+1) + 'R · ' + v + '개"></div>';
+        }
       }
-      html += '</div><div class="rlabel">' + (r+1) + 'R</div></div>';
+      html += '</div><div class="rlabel"' + (anyPlayed ? '' : ' style="color:var(--dim)"') + '>' +
+              (r+1) + 'R</div></div>';
     }
     html += '</div></div>';
 
-    /* 라운드 합계 표 */
-    html += '<div class="card"><h2>라운드별 합계 (표)</h2>' +
-      '<div class="h-sub">위 그래프와 같은 값입니다.</div><div class="tbl-wrap"><table style="min-width:0">' +
-      '<thead><tr><th class="static" style="text-align:left">팀</th>';
-    for(var rh=1; rh<=ROUNDS; rh++){ html += '<th class="static">' + rh + 'R</th>'; }
-    html += '<th class="static">합계</th></tr></thead><tbody>';
-    for(var tr=0; tr<ORDER.length; tr++){
-      var Tt = teamOf(s,tr);
-      html += '<tr><td class="name"><span class="tdot" style="background:' + TEAMS[Tt.key].color + '"></span>' +
-              TEAMS[Tt.key].name + '</td>';
-      for(var rc=0; rc<ROUNDS; rc++){ html += '<td>' + Tt.rounds[rc] + '</td>'; }
-      html += '<td style="font-weight:900">' + Tt.bet + '</td></tr>';
-    }
-    html += '</tbody></table></div></div>';
+    /* 라운드 승패 + 최종 결과 */
+    html += judge(s);
 
     /* 조별 표 */
     html += '<div class="card"><h2>조별 결과</h2>' +
@@ -520,7 +524,10 @@
       html += '<tr' + (R.valid ? '' : ' class="bad-row"') + '>' +
         '<td class="name"><span class="tdot" style="background:' + m.color + '"></span>' + m.name + '</td>' +
         '<td>' + esc(R.group) + '조' + (R.valid ? '' : '<span class="flag">합계 초과</span>') + '</td>';
-      for(var k3=0;k3<ROUNDS;k3++){ html += '<td>' + (R.bets[k3] || 0) + '</td>'; }
+      for(var k3=0;k3<ROUNDS;k3++){
+        html += '<td' + (typeof R.bets[k3] === "number" ? '' : ' style="color:var(--dim)"') + '>' +
+                (typeof R.bets[k3] === "number" ? R.bets[k3] : "–") + '</td>';
+      }
       html += '<td style="font-weight:900">' + R.totalBet + '</td>' +
               '<td style="font-weight:900">' + R.left + '</td>' +
               '<td><button class="del" data-team="' + R.team + '" data-group="' + esc(R.group) + '">삭제</button></td></tr>';
@@ -532,9 +539,6 @@
       html += '<td>' + rt + '</td>';
     }
     html += '<td>' + s.grand.bet + '</td><td>' + s.grand.left + '</td><td></td></tr></tfoot></table></div></div>';
-
-    /* 판정 */
-    html += judge(s);
 
     d.innerHTML = html;
   }
@@ -588,49 +592,155 @@
     return a.group < b.group ? -1 : (a.group > b.group ? 1 : 0);
   }
 
+  // 라운드 승리 판정: 라운드마다 팀 배팅 합계 최다 팀이 승리, 3승 선취 시 게임 종료
+  function roundResults(s){
+    var live = ORDER.filter(function(k){ return s.teams[k].count > 0; });
+    var wins = {}, rows = [], decidedAt = null, champion = null;
+    for(var i=0;i<live.length;i++){ wins[live[i]] = 0; }
+
+    for(var r=0;r<ROUNDS;r++){
+      var anyPlayed = false, best = -1, winners = [];
+      for(var t=0;t<live.length;t++){
+        var T = s.teams[live[t]];
+        if(T.played[r] > 0){ anyPlayed = true; }
+      }
+      if(!anyPlayed){
+        rows.push({ round:r+1, played:false, winner:null, tie:false,
+                    after:(decidedAt !== null), wins:copyWins(wins, live) });
+        continue;
+      }
+      for(var t2=0;t2<live.length;t2++){
+        var T2 = s.teams[live[t2]], v = T2.rounds[r];
+        if(v > best){ best = v; winners = [live[t2]]; }
+        else if(v === best){ winners.push(live[t2]); }
+      }
+      var tie = winners.length > 1;
+      var w = (tie || decidedAt !== null) ? null : winners[0];
+      if(w){
+        wins[w]++;
+        if(wins[w] >= 3 && decidedAt === null){ decidedAt = r+1; champion = w; }
+      }
+      rows.push({ round:r+1, played:true, winner:w, tie:tie, tied:winners, best:best,
+                  after:(decidedAt !== null && decidedAt < r+1), wins:copyWins(wins, live) });
+    }
+    return { live:live, wins:wins, rows:rows, decidedAt:decidedAt, champion:champion };
+  }
+  function copyWins(w, live){
+    var o = {};
+    for(var i=0;i<live.length;i++){ o[live[i]] = w[live[i]]; }
+    return o;
+  }
+
+  // 라운드마다 데이터가 들어온 조 수가 팀별로 다르면 합계가 불완전할 수 있음
+  function coverageWarn(s, R){
+    var msgs = [];
+    for(var r=0;r<ROUNDS;r++){
+      var tot = 0, parts = [];
+      for(var i=0;i<R.live.length;i++){
+        var T = s.teams[R.live[i]];
+        tot += T.played[r];
+        if(T.played[r] < T.count){ parts.push(TEAMS[T.key].name + " " + T.played[r] + "/" + T.count); }
+      }
+      if(tot > 0 && parts.length){ msgs.push((r+1) + "R(" + parts.join(", ") + ")"); }
+    }
+    if(!msgs.length){ return ""; }
+    return '<div class="callout warn">⚠️ 일부 라운드는 데이터가 들어온 조가 전체 조보다 적습니다 — ' +
+      msgs.join(" · ") + '. <b>빠진 조가 있으면 라운드 승패가 뒤바뀔 수 있습니다.</b> ' +
+      '모든 조의 결과를 넣은 뒤 판정하세요.</div>';
+  }
+
   function judge(s){
-    var ranked = ORDER.map(function(k){ return s.teams[k]; })
-      .filter(function(T){ return T.count > 0; })
-      .sort(function(x,y){ return y.bet - x.bet; });
-    if(!ranked.length){ return ""; }
+    var R = roundResults(s);
+    if(!R.live.length){ return ""; }
 
-    var top = ranked[0];
-    var tie = ranked.filter(function(T){ return T.bet === top.bet; });
-    var h = '<div class="card"><h2>결과 판정</h2>' +
-      '<div class="h-sub">아래 기준은 게임 안내문(“팀이 승리하려면 많이 배팅해야 한다”)에서 도출한 것입니다.</div>' +
-      invalidWarn(s) +
-      '<div class="callout warn">판정 기준은 <b>추측입니다.</b> ' +
-      '앱 안내문에는 “많이 배팅해야 팀이 승리한다”고만 되어 있고 정확한 승리 조건이 정의되어 있지 않습니다. ' +
-      '실제 운영 기준이 다르면 아래 판정은 무시하고 위의 합계 표를 사용하세요.</div><div class="win">';
+    var h = '<div class="card"><h2>라운드별 승패</h2>' +
+      '<div class="h-sub">라운드마다 팀 배팅 합계가 가장 많은 팀이 그 라운드를 승리합니다. ' +
+      '3개 라운드를 먼저 이기면 최종 승리하고 게임이 종료됩니다.</div>' +
+      invalidWarn(s) + coverageWarn(s, R);
 
-    if(tie.length > 1){
-      var names = tie.map(function(T){ return TEAMS[T.key].name; }).join(", ");
-      h += box("승리 팀 (총 배팅 최다)", names + " 동점", "총 배팅 " + top.bet + "개로 동률입니다. 별도 기준이 필요합니다.");
-    } else {
-      h += box("승리 팀 (총 배팅 최다)", TEAMS[top.key].name,
-               "총 배팅 " + top.bet + "개 · " + top.count + "개 조 · 조 평균 " +
-               (top.bet / top.count).toFixed(1) + "개");
-      var win = top.groups.slice().sort(function(x,y){ return y.left - x.left; });
-      var best = win[0];
-      var gTie = win.filter(function(g){ return g.left === best.left; });
+    /* 라운드 표 */
+    h += '<div class="tbl-wrap"><table style="min-width:0"><thead><tr>' +
+         '<th class="static" style="text-align:left">라운드</th>';
+    for(var i=0;i<R.live.length;i++){
+      h += '<th class="static">' + TEAMS[R.live[i]].name + '</th>';
+    }
+    h += '<th class="static">라운드 승리</th><th class="static">누적 승수</th></tr></thead><tbody>';
+
+    for(var r=0;r<R.rows.length;r++){
+      var row = R.rows[r];
+      h += '<tr' + (row.after ? ' style="opacity:.45"' : '') + '>' +
+           '<td class="name">' + row.round + 'R</td>';
+      for(var t=0;t<R.live.length;t++){
+        var key = R.live[t], v = s.teams[key].rounds[r];
+        var isWin = (row.winner === key);
+        h += '<td' + (isWin ? ' style="font-weight:900"' : '') + '>' +
+             (row.played ? v : '<span style="color:var(--dim)">–</span>') +
+             (isWin ? ' <span class="tdot" style="background:' + TEAMS[key].color + ';margin:0 0 0 3px"></span>' : '') +
+             '</td>';
+      }
+      var wcell;
+      if(!row.played){ wcell = '<span class="muted">미진행</span>'; }
+      else if(row.after){ wcell = '<span class="muted">게임 종료 후</span>'; }
+      else if(row.tie){
+        wcell = '<span style="color:#f5cd6e;font-weight:900">동점</span>' +
+                '<span class="flag" style="background:rgba(240,180,41,.16);color:#f5cd6e">규칙 미정</span>';
+      }
+      else { wcell = '<span class="tdot" style="background:' + TEAMS[row.winner].color + '"></span>' +
+                     '<b>' + TEAMS[row.winner].name + '</b>'; }
+      var tally = R.live.map(function(k){ return TEAMS[k].name.charAt(0) + " " + row.wins[k]; }).join(" · ");
+      h += '<td>' + wcell + '</td><td class="muted">' + tally + '</td></tr>';
+    }
+    h += '</tbody></table></div>';
+
+    /* 승수 요약 */
+    h += '<div class="tiles" style="margin-top:16px;margin-bottom:0">';
+    for(var w=0;w<R.live.length;w++){
+      var k2 = R.live[w];
+      h += '<div class="tile" style="border-color:' + (R.champion === k2 ? TEAMS[k2].color : 'var(--line)') + '">' +
+           '<div class="k"><span class="tdot" style="background:' + TEAMS[k2].color + '"></span>' +
+           TEAMS[k2].name + ' 승수</div><div class="v">' + R.wins[k2] +
+           '<span class="u">승 / 3승 필요</span></div></div>';
+    }
+    h += '</div></div>';
+
+    /* 최종 판정 */
+    h += '<div class="card"><h2>최종 결과</h2><div class="win">';
+    var hasTie = R.rows.some(function(x){ return x.tie; });
+    if(hasTie){
+      h += '<div class="callout warn">동점 라운드가 있습니다. ' +
+           '<b>동점 시 처리 규칙은 정해진 바 없어 어느 팀에도 승수를 주지 않았습니다.</b> ' +
+           '별도 기준이 있다면 알려 주세요 — 판정이 달라질 수 있습니다.</div>';
+    }
+    if(R.champion){
+      var C = s.teams[R.champion];
+      h += box("승리 팀", TEAMS[R.champion].name,
+               R.wins[R.champion] + "승 · " + R.decidedAt + "라운드에서 3승 달성, 게임 종료");
+      var gs = C.groups.slice().sort(function(x,y){ return y.left - x.left; });
+      var bestG = gs[0];
+      var gTie = gs.filter(function(g){ return g.left === bestG.left; });
       if(gTie.length > 1){
         h += box("우승 조 (승리 팀 내 잔여 최다)",
                  gTie.map(function(g){ return esc(g.group) + "조"; }).join(", ") + " 동점",
-                 "잔여 " + best.left + "개로 동률입니다.");
+                 "잔여 " + bestG.left + "개로 동률입니다.");
       } else {
-        h += box("우승 조 (승리 팀 내 잔여 최다)", TEAMS[top.key].name + " " + esc(best.group) + "조",
-                 "잔여 " + best.left + "개 · 총 배팅 " + best.totalBet + "개");
+        h += box("우승 조 (승리 팀 내 잔여 최다)", TEAMS[R.champion].name + " " + esc(bestG.group) + "조",
+                 "잔여 " + bestG.left + "개 · 총 배팅 " + bestG.totalBet + "개");
       }
-    }
-
-    var allSorted = s.list.slice().sort(function(x,y){ return y.left - x.left; });
-    if(allSorted.length){
-      var a0 = allSorted[0];
-      h += box("전체 잔여 1위 (참고)", TEAMS[a0.team].name + " " + esc(a0.group) + "조",
-               "잔여 " + a0.left + "개. 소속 팀이 승리하지 못하면 우승이 아닙니다.");
+      if(R.decidedAt < ROUNDS){
+        h += '<div class="callout info">' + R.decidedAt + '라운드에서 승부가 결정되었으므로 ' +
+             (R.decidedAt+1) + '~' + ROUNDS + '라운드는 진행하지 않습니다. ' +
+             '표에서 흐리게 표시된 행은 판정에 반영하지 않았습니다.</div>';
+      }
+    } else {
+      var lead = R.live.slice().sort(function(a,b){ return R.wins[b] - R.wins[a]; })[0];
+      h += box("승리 팀", "아직 결정되지 않았습니다",
+               "3승을 달성한 팀이 없습니다. 현재 선두는 " + TEAMS[lead].name + " " + R.wins[lead] + "승입니다.");
+      h += '<div class="callout info">모든 조의 결과가 들어왔는데도 3승 팀이 없다면, ' +
+           '동점 라운드 처리 기준을 정해야 최종 승자가 나옵니다.</div>';
     }
     return h + '</div></div>';
   }
+
   function box(k, v, d){
     return '<div class="win-b"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + d + '</div></div>';
   }

@@ -238,14 +238,19 @@
         <div class="chips-num" id="result-left"></div>
         <div class="chips-unit">남은 칩의 갯수</div>
       </div>
+      <div class="notice warn" id="stop-hint" style="display:none">
+        진행자가 <b>게임 종료</b>를 선언했다면 아래 ‘여기서 종료하고 결과 저장’을 누르세요.
+        (3개 라운드를 먼저 이긴 팀이 나오면 게임이 끝납니다.)
+      </div>
       <div class="spacer"></div>
-      <button class="btn" id="btn-result-next"></button>
+      <button class="btn" id="btn-result-next" style="margin-bottom:10px"></button>
+      <button class="btn ghost" id="btn-stop" style="display:none">여기서 종료하고 결과 저장</button>
     </section>
 
     <!-- 8. 최종 -->
     <section class="screen" id="s-final">
       <div class="card final">
-        <div class="lbl">5라운드 종료</div>
+        <div class="lbl" id="final-rounds">5라운드 종료</div>
         <h2 style="font-size:20px;margin:8px 0 0" id="final-title"></h2>
         <div class="num" id="final-left"></div>
         <div class="lbl">남은 칩의 갯수</div>
@@ -507,6 +512,9 @@
     $("btn-result-next").textContent = state.round < TOTAL_ROUNDS
       ? (state.round + 1) + "라운드로 이동"
       : "최종 결과 보기";
+    var canStop = state.round >= 3 && state.round < TOTAL_ROUNDS;
+    $("btn-stop").style.display = canStop ? "block" : "none";
+    $("stop-hint").style.display = canStop ? "block" : "none";
     show("s-result");
   }
   $("btn-result-next").addEventListener("click", function(){
@@ -517,6 +525,11 @@
     } else {
       goFinal();
     }
+  });
+
+  $("btn-stop").addEventListener("click", function(){
+    if(!window.confirm(state.round + "라운드까지의 결과로 종료하고 저장할까요?")){ return; }
+    goFinal();
   });
 
   /* ================= 8. 최종 + 저장 ================= */
@@ -553,6 +566,8 @@
   }
 
   function goFinal(){
+    $("final-rounds").textContent = state.history.length + "라운드 종료" +
+      (state.history.length < TOTAL_ROUNDS ? " (조기 종료)" : "");
     $("final-title").textContent = label();
     $("final-left").textContent = state.chips;
     var html = "", total = 0;
