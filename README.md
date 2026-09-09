@@ -11,6 +11,10 @@
 
 둘 다 로그인 불필요합니다. 취합 앱 주소는 학생에게 공유하지 마세요.
 
+> `/admin`이 열리지 않으면 `/admin.html`로 접속하세요.
+> 확장자 없는 경로는 `vercel.json`의 `cleanUrls` 설정으로 동작합니다.
+> (Vercel 정적 배포에서는 이 설정이 기본으로 꺼져 있습니다.)
+
 - 호스팅: Vercel (프로젝트 `chip-dilemma`, Hobby 플랜)
 - 연결 저장소: `gyureeedu/Chip_Deal-3group`
 - 프로덕션 브랜치: `claude/nifty-heisenberg-qspqy5` (저장소 기본 브랜치)
