@@ -215,6 +215,7 @@
     <section class="screen" id="sc-final">
       <div class="card big" id="final-big"></div>
       <div class="card" id="final-champ"></div>
+      <div class="card" id="final-last"></div>
       <div class="card">
         <h3>누적 승수</h3>
         <div class="wins" id="final-wins"></div>
@@ -228,12 +229,18 @@
         <div class="tbl-wrap"><table id="final-groups"></table></div>
       </div>
       <div class="card">
-        <button class="btn" id="final-csv">CSV 내보내기</button>
-        <div class="btn-row">
+        <h3>결과 저장</h3>
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn sm" id="final-csv">CSV 내보내기</button>
           <button class="btn sm ghost" id="final-copy">결과 복사</button>
-          <button class="btn sm danger" id="final-reset">새 게임</button>
         </div>
         <div class="err" id="final-msg"></div>
+      </div>
+      <div class="card">
+        <h3>게임 리셋</h3>
+        <p class="muted">이 게임의 기록을 지우고 팀 지정부터 다시 시작합니다.
+          저장하지 않은 결과는 복구할 수 없습니다.</p>
+        <button class="btn danger" id="final-reset" style="margin-top:6px">리셋하고 새 게임 시작</button>
       </div>
     </section>
 
@@ -555,7 +562,8 @@
 
     checkEnd();
     save();
-    renderResult(state.results[state.results.length - 1]);
+    if(state.done){ renderFinal(); }
+    else { renderResult(state.results[state.results.length - 1]); }
   }
 
   function teamTotalBet(k){
@@ -667,7 +675,7 @@
     $("result-tbl").innerHTML = html;
     $("result-wins").innerHTML = winTiles();
 
-    $("result-next").textContent = state.done ? "최종 결과 보기" : (state.round + "라운드 진행");
+    $("result-next").textContent = state.round + "라운드 진행";
     show("sc-result");
   }
 
@@ -743,6 +751,19 @@
         ? '잔여 칩이 같아 해당 조 모두 우승입니다.'
         : (state.champTeams.length > 1 ? '공동 최종 승리 팀' : '최종 승리 팀') +
           '에서 칩을 가장 많이 남긴 조입니다.') + '</p>';
+
+    var last = state.results[state.results.length - 1];
+    if(last){
+      var wn = winnerNames(last);
+      var ln = [];
+      for(var L=0;L<last.lowTeams.length;L++){ ln.push(TEAMS[last.lowTeams[L]].name); }
+      $("final-last").innerHTML = '<h3>마지막 ' + last.round + '라운드</h3>' +
+        '<div class="stat"><span class="k">' +
+        (last.tie ? '공동 승리 팀' : '승리 팀') + '</span><span class="v">' +
+        esc(wn.join(" · ")) + ' ' + last.topSum + '개</span></div>' +
+        '<div class="stat"><span class="k">가장 적게 낸 팀</span><span class="v">' +
+        esc(ln.join(" · ")) + ' ' + last.lowSum + '개</span></div>';
+    }
 
     $("final-wins").innerHTML = winTiles();
 
@@ -953,7 +974,7 @@
   };
   $("final-copy").onclick = function(){ copyText(buildText(), $("final-msg")); };
   $("final-reset").onclick = function(){
-    ask("이 게임 기록을 지우고 새 게임을 시작할까요?", function(){
+    ask("이 게임 기록을 지우고 팀 지정부터 다시 시작할까요?\n저장하지 않은 결과는 복구할 수 없습니다.", function(){
       clearSave(); $("resume-card").style.display = "none"; startSetup();
     });
   };
