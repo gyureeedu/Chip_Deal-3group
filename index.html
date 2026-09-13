@@ -165,8 +165,8 @@
           · 라운드마다 배팅한 칩은 <b>돌려받지 못하고 차감</b><br>
           · 같은 팀 조들의 배팅 합계가 가장 많은 팀이 라운드 승리<br>
           · <b>먼저 3승</b>한 팀이 최종 승리 → 그 팀에서 <b>칩을 가장 많이 남긴 조</b>가 우승<br>
-          · 라운드 합계가 같으면 <b>동점</b>(승수 없음)<br>
-          · 5라운드까지 3승 팀이 없으면 <b>최다 승 팀</b>, 승수도 같으면 <b>누적 배팅 합계가 많은 팀</b>이 승리<br>
+          · 라운드 합계가 같으면 <b>동점 팀 모두 1승</b><br>
+          · 최다 승 팀이 여럿이면 <b>누적 배팅 합계가 많은 팀</b>이 승리<br>
           · 승리 팀 안에서 잔여 칩이 같으면 <b>해당 조 모두 우승</b>
         </div>
         <div class="err" id="names-err"></div>
@@ -260,7 +260,7 @@
   var ORDER = ["red","blue","yellow","black"];
   var START_CHIPS = 25, MAX_ROUNDS = 5, WINS_NEEDED = 3;
   var COUNT_OPTIONS = [1,2,3,4,5,6];
-  var KEY = "chipDilemma.game.v1";
+  var KEY = "chipDilemma.game.v2";
 
   var $ = function(id){ return document.getElementById(id); };
   var esc = function(s){
@@ -545,11 +545,10 @@
       else if(sums[kk] === low){ lowTeams.push(kk); }
     }
     var tie = topTeams.length > 1;
-    var winner = tie ? null : topTeams[0];
-    if(winner){ state.wins[winner] += 1; }
+    for(i=0;i<topTeams.length;i++){ state.wins[topTeams[i]] += 1; }
 
     state.results.push({
-      round: state.round, sums: sums, winner: winner, tie: tie,
+      round: state.round, sums: sums, winners: topTeams, tie: tie,
       lowTeams: lowTeams, lowSum: low, topSum: top
     });
 
@@ -564,6 +563,16 @@
     return sum;
   }
 
+  function byTotalBet(keys){
+    var best = -1, out = [];
+    for(var i=0;i<keys.length;i++){
+      var tb = teamTotalBet(keys[i]);
+      if(tb > best){ best = tb; out = [keys[i]]; }
+      else if(tb === best){ out.push(keys[i]); }
+    }
+    return { teams: out, bet: best };
+  }
+
   function checkEnd(){
     var i, k, best = -1, leaders = [];
     for(i=0;i<state.teams.length;i++){
@@ -573,27 +582,35 @@
     }
     if(best >= WINS_NEEDED){
       state.done = true;
-      state.champTeam = leaders[0];
-      state.reason = WINS_NEEDED + "승 달성 (" + state.round + "라운드)";
+      if(leaders.length === 1){
+        state.champTeam = leaders[0];
+        state.reason = WINS_NEEDED + "승 달성 (" + state.round + "라운드)";
+      } else {
+        var r = byTotalBet(leaders);
+        if(r.teams.length === 1){
+          state.champTeam = r.teams[0];
+          state.reason = state.round + "라운드에 " + best + "승 동시 달성 → 누적 배팅 합계 최다(" +
+            r.bet + "개) 팀";
+        } else {
+          state.champTeam = null;
+          state.reason = state.round + "라운드에 " + best + "승 동시 달성 · 누적 배팅 " + r.bet +
+            "개까지 동률로 최종 승리 팀 미정";
+        }
+      }
     } else if(state.round >= MAX_ROUNDS){
       state.done = true;
       if(leaders.length === 1){
         state.champTeam = leaders[0];
         state.reason = MAX_ROUNDS + "라운드 종료 · " + WINS_NEEDED + "승 팀 없음 → 최다 승(" + best + "승) 팀";
       } else {
-        var bestBet = -1, betLeaders = [];
-        for(i=0;i<leaders.length;i++){
-          var tb = teamTotalBet(leaders[i]);
-          if(tb > bestBet){ bestBet = tb; betLeaders = [leaders[i]]; }
-          else if(tb === bestBet){ betLeaders.push(leaders[i]); }
-        }
-        if(betLeaders.length === 1){
-          state.champTeam = betLeaders[0];
+        var r2 = byTotalBet(leaders);
+        if(r2.teams.length === 1){
+          state.champTeam = r2.teams[0];
           state.reason = MAX_ROUNDS + "라운드 종료 · " + best + "승 동률 → 누적 배팅 합계 최다(" +
-            bestBet + "개) 팀";
+            r2.bet + "개) 팀";
         } else {
           state.champTeam = null;
-          state.reason = MAX_ROUNDS + "라운드 종료 · " + best + "승, 누적 배팅 " + bestBet +
+          state.reason = MAX_ROUNDS + "라운드 종료 · " + best + "승, 누적 배팅 " + r2.bet +
             "개까지 동률로 최종 승리 팀 미정";
         }
       }
@@ -612,20 +629,21 @@
   function renderResult(res){
     setBadge(res.round + "라운드 결과", null);
     var big = $("result-big");
-    if(res.winner){
-      var t = TEAMS[res.winner];
+    if(res.winners.length === 1){
+      var t = TEAMS[res.winners[0]];
       big.innerHTML = '<div class="lbl">' + res.round + '라운드 승리 팀</div>' +
         '<div class="val" style="color:' + t.color + '">' + t.name + '</div>' +
         '<div class="sub2">배팅 합계 ' + res.topSum + '개</div>';
     } else {
-      var names = [];
-      for(var i=0;i<state.teams.length;i++){
-        if(res.sums[state.teams[i]] === res.topSum){ names.push(TEAMS[state.teams[i]].name); }
+      var vals = [];
+      for(var i=0;i<res.winners.length;i++){
+        vals.push('<span style="color:' + TEAMS[res.winners[i]].color + '">' +
+          TEAMS[res.winners[i]].name + '</span>');
       }
-      big.innerHTML = '<div class="lbl">' + res.round + '라운드 결과</div>' +
-        '<div class="val">동점</div>' +
-        '<div class="sub2">' + esc(names.join(" · ")) + ' 각 ' + res.topSum +
-        '개 · 어느 팀에도 승수를 주지 않았습니다</div>';
+      big.innerHTML = '<div class="lbl">' + res.round + '라운드 공동 승리 팀</div>' +
+        '<div class="val">' + vals.join(' · ') + '</div>' +
+        '<div class="sub2">배팅 합계 각 ' + res.topSum + '개 동점 · ' +
+        res.winners.length + '개 팀 모두 1승</div>';
     }
 
     var lowNames = [];
@@ -639,9 +657,11 @@
     for(var m=0;m<state.teams.length;m++){
       var k = state.teams[m], left = 0;
       for(var g=0;g<state.groups[k].length;g++){ left += state.groups[k][g].chips; }
-      var tagHtml = res.winner === k
-        ? '<span class="tag" style="background:' + TEAMS[k].color + ';color:#12141f">승</span>'
-        : (res.tie && res.sums[k] === res.topSum ? '<span class="tag" style="background:var(--card2);color:var(--sub)">동점</span>' : '');
+      var isWin = res.winners.indexOf(k) >= 0;
+      var tagHtml = isWin
+        ? '<span class="tag" style="background:' + TEAMS[k].color + ';color:#12141f">' +
+          (res.tie ? '공동 승' : '승') + '</span>'
+        : '';
       html += '<tr><td class="nm">' + dot(k) + ' ' + TEAMS[k].name + '</td><td>' + res.sums[k] +
         '개</td><td>' + left + '개</td><td>' + tagHtml + '</td></tr>';
     }
@@ -650,6 +670,12 @@
 
     $("result-next").textContent = state.done ? "최종 결과 보기" : (state.round + "라운드 진행");
     show("sc-result");
+  }
+
+  function winnerNames(res){
+    var out = [];
+    for(var i=0;i<res.winners.length;i++){ out.push(TEAMS[res.winners[i]].name); }
+    return out;
   }
 
   function winTiles(){
@@ -718,13 +744,13 @@
       html += '<tr><td class="nm">' + res.round + 'R</td>';
       for(var n=0;n<state.teams.length;n++){
         var k = state.teams[n];
-        var strong = (res.winner === k);
+        var strong = (res.winners.indexOf(k) >= 0);
         html += '<td' + (strong ? ' style="color:' + TEAMS[k].color + ';font-weight:900"' : '') +
           '>' + res.sums[k] + '</td>';
       }
       var lowNames = [];
       for(var L=0;L<res.lowTeams.length;L++){ lowNames.push(TEAMS[res.lowTeams[L]].name); }
-      html += '<td>' + (res.winner ? TEAMS[res.winner].name : "동점") + '</td>' +
+      html += '<td>' + winnerNames(res).join("·") + (res.tie ? " (공동)" : "") + '</td>' +
         '<td>' + esc(lowNames.join("·")) + ' ' + res.lowSum + '개</td></tr>';
     }
     $("final-rounds").innerHTML = html;
@@ -781,7 +807,7 @@
       for(var n=0;n<state.teams.length;n++){ line.push(res.sums[state.teams[n]]); }
       var lowNames = [];
       for(var L=0;L<res.lowTeams.length;L++){ lowNames.push(TEAMS[res.lowTeams[L]].name); }
-      line.push(res.winner ? TEAMS[res.winner].name : "동점", lowNames.join("·"), res.lowSum);
+      line.push(winnerNames(res).join("·") + (res.tie ? "(공동)" : ""), lowNames.join("·"), res.lowSum);
       rows.push(line);
     }
     var out = [];
@@ -815,7 +841,7 @@
       var lowNames = [];
       for(var L=0;L<res.lowTeams.length;L++){ lowNames.push(TEAMS[res.lowTeams[L]].name); }
       lines.push(res.round + "R | " + parts.join(" / ") + " | 승: " +
-        (res.winner ? TEAMS[res.winner].name : "동점") +
+        (winnerNames(res).join("·") + (res.tie ? "(공동)" : "")) +
         " | 최소: " + lowNames.join("·") + " " + res.lowSum + "개");
     }
     for(var a=0;a<state.teams.length;a++){
