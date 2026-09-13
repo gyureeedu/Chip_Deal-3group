@@ -91,6 +91,11 @@
   th{color:var(--sub);font-size:12px;font-weight:800}
   td.nm{text-align:left;font-weight:800}
   .tbl-wrap{overflow-x:auto}
+  table{font-variant-numeric:tabular-nums}
+  th[rowspan]{vertical-align:middle}
+  th.rnd{border-left:1px solid var(--line)}
+  td.betc{border-left:1px solid var(--line);font-weight:800}
+  td.rest{color:var(--sub)}
   .tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800}
   .note{background:var(--card2);border-radius:12px;padding:12px 14px;font-size:13px;color:#d9deff;line-height:1.6;margin-top:10px}
   .note b{color:#fff}
@@ -227,6 +232,11 @@
       <div class="card">
         <h3>조별 결과</h3>
         <div class="tbl-wrap"><table id="final-groups"></table></div>
+      </div>
+      <div class="card">
+        <h3>조별 라운드 진행</h3>
+        <p class="muted">라운드마다 배팅한 칩과, 그 라운드를 마친 뒤 남은 칩입니다.</p>
+        <div class="tbl-wrap"><table id="final-flow"></table></div>
       </div>
       <div class="card">
         <h3>결과 저장</h3>
@@ -804,6 +814,31 @@
       }
     }
     $("final-groups").innerHTML = gh;
+
+    var fh = '<tr><th rowspan="2">팀</th><th rowspan="2">조</th>';
+    for(var q=1;q<=played;q++){ fh += '<th class="rnd" colspan="2">' + q + 'R</th>'; }
+    fh += '<th rowspan="2">총 배팅</th><th rowspan="2">최종 잔여</th></tr><tr>';
+    for(q=1;q<=played;q++){ fh += '<th class="rnd">배팅</th><th>잔여</th>'; }
+    fh += '</tr>';
+    for(var x=0;x<state.teams.length;x++){
+      var xk = state.teams[x];
+      for(var y=0;y<state.groups[xk].length;y++){
+        var xg = state.groups[xk][y], left = START_CHIPS;
+        fh += '<tr><td class="nm">' + dot(xk) + ' ' + TEAMS[xk].name + '</td>' +
+          '<td class="nm">' + esc(xg.name) + '</td>';
+        for(var z=0;z<played;z++){
+          if(typeof xg.bets[z] === "number"){
+            left -= xg.bets[z];
+            fh += '<td class="betc">' + xg.bets[z] + '</td><td class="rest">' + left + '</td>';
+          } else {
+            fh += '<td class="betc">-</td><td class="rest">-</td>';
+          }
+        }
+        fh += '<td>' + (START_CHIPS - xg.chips) + '</td><td><b>' + xg.chips + '</b></td></tr>';
+      }
+    }
+    $("final-flow").innerHTML = fh;
+
     $("final-msg").textContent = "";
     show("sc-final");
   }
@@ -826,6 +861,24 @@
           isChampTeam(tk) ? "O" : "",
           isChampGroup(champ, tk, gr) ? "O" : "");
         rows.push(row);
+      }
+    }
+    rows.push([]);
+    rows.push(["조별 라운드 진행 (배팅 / 잔여)"]);
+    var fhead = ["팀","조"];
+    for(var q=1;q<=played;q++){ fhead.push(q + "R배팅", q + "R잔여"); }
+    fhead.push("총배팅","최종잔여");
+    rows.push(fhead);
+    for(var x=0;x<state.teams.length;x++){
+      var xk = state.teams[x];
+      for(var y=0;y<state.groups[xk].length;y++){
+        var xg = state.groups[xk][y], left = START_CHIPS, frow = [TEAMS[xk].name, xg.name];
+        for(var z=0;z<played;z++){
+          if(typeof xg.bets[z] === "number"){ left -= xg.bets[z]; frow.push(xg.bets[z], left); }
+          else { frow.push("", ""); }
+        }
+        frow.push(START_CHIPS - xg.chips, xg.chips);
+        rows.push(frow);
       }
     }
     rows.push([]);
