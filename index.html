@@ -208,6 +208,10 @@
         <div class="tbl-wrap"><table id="result-tbl"></table></div>
       </div>
       <div class="card">
+        <h3 id="result-gtitle">조별 배팅 내역</h3>
+        <div class="tbl-wrap"><table id="result-groups"></table></div>
+      </div>
+      <div class="card">
         <h3>누적 승수</h3>
         <div class="wins" id="result-wins"></div>
       </div>
@@ -683,6 +687,24 @@
         '개</td><td>' + left + '개</td><td>' + tagHtml + '</td></tr>';
     }
     $("result-tbl").innerHTML = html;
+
+    var idx = res.round - 1;
+    $("result-gtitle").textContent = res.round + "라운드 조별 배팅 내역";
+    var gh = '<tr><th>팀</th><th>조</th><th>이번 배팅</th><th>누적 배팅</th><th>남은 칩</th></tr>';
+    for(var a=0;a<state.teams.length;a++){
+      var tk = state.teams[a];
+      for(var b=0;b<state.groups[tk].length;b++){
+        var gr = state.groups[tk][b];
+        var bet = typeof gr.bets[idx] === "number" ? gr.bets[idx] : 0;
+        gh += '<tr><td class="nm">' + dot(tk) + ' ' + TEAMS[tk].name + '</td>' +
+          '<td class="nm">' + esc(gr.name) + '</td>' +
+          '<td><b>' + bet + '</b></td>' +
+          '<td class="rest">' + (START_CHIPS - gr.chips) + '</td>' +
+          '<td><b>' + gr.chips + '</b></td></tr>';
+      }
+    }
+    $("result-groups").innerHTML = gh;
+
     $("result-wins").innerHTML = winTiles();
 
     $("result-next").textContent = state.round + "라운드 진행";
