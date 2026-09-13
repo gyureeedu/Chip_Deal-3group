@@ -167,6 +167,7 @@
           · <b>먼저 3승</b>한 팀이 최종 승리 → 그 팀에서 <b>칩을 가장 많이 남긴 조</b>가 우승<br>
           · 라운드 합계가 같으면 <b>동점 팀 모두 1승</b><br>
           · 최다 승 팀이 여럿이면 <b>누적 배팅 합계가 많은 팀</b>이 승리<br>
+          · 누적 배팅 합계까지 같으면 <b>해당 팀 모두 공동 승리</b><br>
           · 승리 팀 안에서 잔여 칩이 같으면 <b>해당 조 모두 우승</b>
         </div>
         <div class="err" id="names-err"></div>
@@ -260,7 +261,7 @@
   var ORDER = ["red","blue","yellow","black"];
   var START_CHIPS = 25, MAX_ROUNDS = 5, WINS_NEEDED = 3;
   var COUNT_OPTIONS = [1,2,3,4,5,6];
-  var KEY = "chipDilemma.game.v2";
+  var KEY = "chipDilemma.game.v3";
 
   var $ = function(id){ return document.getElementById(id); };
   var esc = function(s){
@@ -429,7 +430,7 @@
       results: [],
       wins: wins,
       done: false,
-      champTeam: null,
+      champTeams: [],
       reason: "",
       endedAt: ""
     };
@@ -583,35 +584,33 @@
     if(best >= WINS_NEEDED){
       state.done = true;
       if(leaders.length === 1){
-        state.champTeam = leaders[0];
+        state.champTeams = leaders;
         state.reason = WINS_NEEDED + "승 달성 (" + state.round + "라운드)";
       } else {
         var r = byTotalBet(leaders);
+        state.champTeams = r.teams;
         if(r.teams.length === 1){
-          state.champTeam = r.teams[0];
           state.reason = state.round + "라운드에 " + best + "승 동시 달성 → 누적 배팅 합계 최다(" +
             r.bet + "개) 팀";
         } else {
-          state.champTeam = null;
-          state.reason = state.round + "라운드에 " + best + "승 동시 달성 · 누적 배팅 " + r.bet +
-            "개까지 동률로 최종 승리 팀 미정";
+          state.reason = state.round + "라운드에 " + best + "승 동시 달성 · 누적 배팅도 " + r.bet +
+            "개로 동일 → 공동 최종 승리";
         }
       }
     } else if(state.round >= MAX_ROUNDS){
       state.done = true;
       if(leaders.length === 1){
-        state.champTeam = leaders[0];
+        state.champTeams = leaders;
         state.reason = MAX_ROUNDS + "라운드 종료 · " + WINS_NEEDED + "승 팀 없음 → 최다 승(" + best + "승) 팀";
       } else {
         var r2 = byTotalBet(leaders);
+        state.champTeams = r2.teams;
         if(r2.teams.length === 1){
-          state.champTeam = r2.teams[0];
           state.reason = MAX_ROUNDS + "라운드 종료 · " + best + "승 동률 → 누적 배팅 합계 최다(" +
             r2.bet + "개) 팀";
         } else {
-          state.champTeam = null;
-          state.reason = MAX_ROUNDS + "라운드 종료 · " + best + "승, 누적 배팅 " + r2.bet +
-            "개까지 동률로 최종 승리 팀 미정";
+          state.reason = MAX_ROUNDS + "라운드 종료 · " + best + "승, 누적 배팅도 " + r2.bet +
+            "개로 동일 → 공동 최종 승리";
         }
       }
     }
@@ -683,7 +682,7 @@
     for(var i=0;i<state.teams.length;i++){
       var k = state.teams[i];
       html += '<div class="win-tile" style="border-color:' +
-        (state.champTeam === k ? TEAMS[k].color : "transparent") + '">' +
+        (isChampTeam(k) ? TEAMS[k].color : "transparent") + '">' +
         '<div class="nm" style="color:' + TEAMS[k].color + '">' + TEAMS[k].name + '</div>' +
         '<div class="n">' + state.wins[k] + '승</div></div>';
     }
@@ -691,48 +690,59 @@
   }
 
   /* ---------- 6. 최종 결과 ---------- */
+  function isChampTeam(k){ return state.champTeams.indexOf(k) >= 0; }
+
   function champGroups(){
-    if(!state.champTeam){ return []; }
-    var list = state.groups[state.champTeam], best = -1, out = [];
-    for(var i=0;i<list.length;i++){
-      if(list[i].chips > best){ best = list[i].chips; out = [list[i]]; }
-      else if(list[i].chips === best){ out.push(list[i]); }
+    var best = -1, out = [];
+    for(var t=0;t<state.champTeams.length;t++){
+      var tk = state.champTeams[t], list = state.groups[tk];
+      for(var i=0;i<list.length;i++){
+        if(list[i].chips > best){ best = list[i].chips; out = [{team:tk, g:list[i]}]; }
+        else if(list[i].chips === best){ out.push({team:tk, g:list[i]}); }
+      }
     }
+    return out;
+  }
+
+  function isChampGroup(champ, tk, gr){
+    for(var i=0;i<champ.length;i++){
+      if(champ[i].team === tk && champ[i].g === gr){ return true; }
+    }
+    return false;
+  }
+
+  function champTeamNames(){
+    var out = [];
+    for(var i=0;i<state.champTeams.length;i++){ out.push(TEAMS[state.champTeams[i]].name); }
     return out;
   }
 
   function renderFinal(){
     setBadge("게임 종료", null);
     var big = $("final-big");
-    if(state.champTeam){
-      var t = TEAMS[state.champTeam];
-      big.innerHTML = '<div class="lbl">최종 승리 팀</div>' +
-        '<div class="val" style="color:' + t.color + '">' + t.name + '</div>' +
-        '<div class="sub2">' + esc(state.reason) + '</div>';
-    } else {
-      big.innerHTML = '<div class="lbl">최종 결과</div><div class="val">미정</div>' +
-        '<div class="sub2">' + esc(state.reason) + '</div>';
+    var vals = [];
+    for(var w=0;w<state.champTeams.length;w++){
+      vals.push('<span style="color:' + TEAMS[state.champTeams[w]].color + '">' +
+        TEAMS[state.champTeams[w]].name + '</span>');
     }
+    big.innerHTML = '<div class="lbl">' +
+      (state.champTeams.length > 1 ? '공동 최종 승리 팀' : '최종 승리 팀') + '</div>' +
+      '<div class="val">' + vals.join(' · ') + '</div>' +
+      '<div class="sub2">' + esc(state.reason) + '</div>';
 
     var champ = champGroups();
-    if(champ.length === 1){
-      $("final-champ").innerHTML = '<h3>우승 조</h3>' +
-        '<div class="stat"><span class="k">' + dot(state.champTeam) + ' ' +
-        TEAMS[state.champTeam].name + ' ' + esc(champ[0].name) +
-        '</span><span class="v">잔여 ' + champ[0].chips + '개</span></div>' +
-        '<p class="muted">최종 승리 팀에서 칩을 가장 많이 남긴 조입니다.</p>';
-    } else if(champ.length > 1){
-      var nms = [];
-      for(var i=0;i<champ.length;i++){ nms.push(champ[i].name); }
-      $("final-champ").innerHTML = '<h3>우승 조 (공동 ' + champ.length + '개 조)</h3>' +
-        '<div class="stat"><span class="k">' + dot(state.champTeam) + ' ' +
-        TEAMS[state.champTeam].name + ' ' + esc(nms.join(" · ")) +
-        '</span><span class="v">잔여 ' + champ[0].chips + '개</span></div>' +
-        '<p class="muted">잔여 칩이 같아 해당 조 모두 우승입니다.</p>';
-    } else {
-      $("final-champ").innerHTML = '<h3>우승 조</h3>' +
-        '<p class="muted">최종 승리 팀이 정해지지 않아 우승 조를 판정할 수 없습니다.</p>';
+    var rows = "";
+    for(var i=0;i<champ.length;i++){
+      rows += '<div class="stat"><span class="k">' + dot(champ[i].team) + ' ' +
+        TEAMS[champ[i].team].name + ' ' + esc(champ[i].g.name) +
+        '</span><span class="v">잔여 ' + champ[i].g.chips + '개</span></div>';
     }
+    $("final-champ").innerHTML = '<h3>우승 조' +
+      (champ.length > 1 ? ' (공동 ' + champ.length + '개 조)' : '') + '</h3>' + rows +
+      '<p class="muted">' + (champ.length > 1
+        ? '잔여 칩이 같아 해당 조 모두 우승입니다.'
+        : (state.champTeams.length > 1 ? '공동 최종 승리 팀' : '최종 승리 팀') +
+          '에서 칩을 가장 많이 남긴 조입니다.') + '</p>';
 
     $("final-wins").innerHTML = winTiles();
 
@@ -764,7 +774,7 @@
       for(var b=0;b<state.groups[tk].length;b++){
         var gr = state.groups[tk][b];
         var totalBet = START_CHIPS - gr.chips;
-        var isChamp = (state.champTeam === tk) && champ.length && champ.indexOf(gr) >= 0;
+        var isChamp = isChampGroup(champ, tk, gr);
         gh += '<tr><td class="nm">' + dot(tk) + ' ' + TEAMS[tk].name + '</td><td class="nm">' +
           esc(gr.name) + (isChamp ? ' <span class="tag" style="background:' + TEAMS[tk].color +
           ';color:#12141f">우승</span>' : '') + '</td>';
@@ -792,8 +802,8 @@
         var row = [TEAMS[tk].name, gr.name];
         for(var c=0;c<played;c++){ row.push(typeof gr.bets[c] === "number" ? gr.bets[c] : ""); }
         row.push(START_CHIPS - gr.chips, gr.chips,
-          state.champTeam === tk ? "O" : "",
-          (state.champTeam === tk && champ.indexOf(gr) >= 0) ? "O" : "");
+          isChampTeam(tk) ? "O" : "",
+          isChampGroup(champ, tk, gr) ? "O" : "");
         rows.push(row);
       }
     }
@@ -825,12 +835,14 @@
   function buildText(){
     var lines = [];
     lines.push("칩의 딜레마 결과 · " + (state.endedAt || stamp()));
-    lines.push("최종 승리 팀: " + (state.champTeam ? TEAMS[state.champTeam].name : "미정") +
-      " (" + state.reason + ")");
+    lines.push("최종 승리 팀: " + champTeamNames().join(" · ") + " (" + state.reason + ")");
     var champ = champGroups();
     if(champ.length){
       var nms = [];
-      for(var i=0;i<champ.length;i++){ nms.push(champ[i].name + " 잔여 " + champ[i].chips + "개"); }
+      for(var i=0;i<champ.length;i++){
+        nms.push(TEAMS[champ[i].team].name + " " + champ[i].g.name +
+          " 잔여 " + champ[i].g.chips + "개");
+      }
       lines.push("우승 조: " + nms.join(" · "));
     }
     for(var r=0;r<state.results.length;r++){
