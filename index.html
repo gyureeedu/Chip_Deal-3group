@@ -94,6 +94,13 @@
   .tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800}
   .note{background:var(--card2);border-radius:12px;padding:12px 14px;font-size:13px;color:#d9deff;line-height:1.6;margin-top:10px}
   .note b{color:#fff}
+  .mask{position:fixed;inset:0;background:rgba(9,11,20,.74);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50}
+  .mask.on{display:flex;animation:fade .15s ease}
+  .modal{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);
+    border-radius:20px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+  .modal .m-txt{font-size:15px;font-weight:700;line-height:1.75;text-align:center;
+    white-space:pre-line;margin-bottom:18px}
   .steps{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
   .steps i{width:26px;height:4px;border-radius:99px;background:var(--line)}
   .steps i.on{background:var(--team)}
@@ -230,6 +237,15 @@
     </section>
 
   </main>
+  <div class="mask" id="mask">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="m-txt" id="m-txt"></div>
+      <div class="btn-row">
+        <button class="btn sm ghost" id="m-no">아니오</button>
+        <button class="btn sm" id="m-yes">예</button>
+      </div>
+    </div>
+  </div>
 </div>
 <script>
 (function(){
@@ -274,6 +290,18 @@
   }
 
   /* ---------- 화면 ---------- */
+  var askCb = null;
+  function ask(text, cb){
+    $("m-txt").textContent = text;
+    askCb = cb;
+    $("mask").classList.add("on");
+    $("m-yes").focus();
+  }
+  function closeAsk(){ $("mask").classList.remove("on"); askCb = null; }
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && $("mask").classList.contains("on")){ closeAsk(); }
+  });
+
   function show(id){
     var list = document.querySelectorAll(".screen");
     for(var i=0;i<list.length;i++){ list[i].classList.remove("on"); }
@@ -483,9 +511,20 @@
     for(i=0;i<state.teams.length;i++){
       for(g=0;g<bets[state.teams[i]].length;g++){ total += bets[state.teams[i]][g]; }
     }
-    if(!window.confirm(state.round + "라운드 배팅을 마감합니다. 마감 후에는 수정할 수 없습니다.\n총 " +
-      total + "개 배팅. 진행할까요?")){ return; }
+    var summary = [];
+    for(i=0;i<state.teams.length;i++){
+      var sk = state.teams[i], ss = 0;
+      for(g=0;g<bets[sk].length;g++){ ss += bets[sk][g]; }
+      summary.push(TEAMS[sk].name + " " + ss + "개");
+    }
+    ask(state.round + "라운드 배팅을 마감합니다.\n" + summary.join(" · ") +
+      " (총 " + total + "개)\n마감 후에는 수정할 수 없습니다.", function(){
+      commitRound(bets);
+    });
+  }
 
+  function commitRound(bets){
+    var i, g;
     var sums = {};
     for(i=0;i<state.teams.length;i++){
       var key = state.teams[i], s = 0;
@@ -850,11 +889,20 @@
     save();
     renderRound();
   };
+  $("m-yes").onclick = function(){
+    var cb = askCb;
+    $("mask").classList.remove("on");
+    askCb = null;
+    if(cb){ cb(); }
+  };
+  $("m-no").onclick = closeAsk;
+  $("mask").onclick = function(e){ if(e.target === $("mask")){ closeAsk(); } };
+
   $("round-submit").onclick = submitRound;
   $("round-reset").onclick = function(){
-    if(window.confirm("진행 중인 게임을 버리고 처음부터 다시 시작할까요?")){
+    ask("진행 중인 게임을 버리고 처음부터 다시 시작할까요?", function(){
       clearSave(); $("resume-card").style.display = "none"; startSetup();
-    }
+    });
   };
   $("result-next").onclick = function(){
     if(state.done){ renderFinal(); } else { renderRound(); }
@@ -867,9 +915,9 @@
   };
   $("final-copy").onclick = function(){ copyText(buildText(), $("final-msg")); };
   $("final-reset").onclick = function(){
-    if(window.confirm("이 게임 기록을 지우고 새 게임을 시작할까요?")){
+    ask("이 게임 기록을 지우고 새 게임을 시작할까요?", function(){
       clearSave(); $("resume-card").style.display = "none"; startSetup();
-    }
+    });
   };
 
   /* ---------- 시작 ---------- */
